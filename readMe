@@ -1,0 +1,6 @@
+1- Install something for cpp and make like Mingw
+2- gcc-g++, binutils, gdb, libstdc++
+3- "terminal.integrated.env.windows": {
+        "Path": "C:\\cygwin64\\bin;${env:Path}"
+    } in settings.json
+4-install Cmake

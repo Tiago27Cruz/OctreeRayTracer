@@ -4,10 +4,13 @@ Projected developed for EDAA class @ FEUP - M.EIC
 
 ## Compile
 
-- cmake -G "Unix Makefiles" -S . -B build
+- Run in root ``cmake -G "Unix Makefiles" -S . -B build``
 
 If it doesn't work add
--  -DCMAKE_C_COMPILER="C:/msys64/ucrt64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="C:/msys64/ucrt64/bin/g++.exe"
+-  ``-DCMAKE_C_COMPILER="C:/msys64/ucrt64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="C:/msys64/ucrt64/bin/g++.exe"``
+
+Then inside ``/build/`` run
+```make```
 
 ## Notes 
 

@@ -48,3 +48,5 @@ CMakeFiles/
 *.exe
 *.out
 *.app
+
+CMakeLists.txt

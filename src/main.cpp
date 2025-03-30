@@ -50,13 +50,18 @@ int main() {
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     std::vector<float> vertices = {
-        -0.5f, -0.5f, 0.0f, // left  
-         0.5f, -0.5f, 0.0f, // right 
-         0.0f,  0.5f, 0.0f  // top   
+        0.5f,  0.5f, 0.0f,  // top right
+        0.5f, -0.5f, 0.0f,  // bottom right
+        -0.5f, -0.5f, 0.0f,  // bottom left
+        -0.5f,  0.5f, 0.0f   // top left 
+    };
+    std::vector<unsigned int> indices = {
+        0, 1, 3,
+        1, 2, 3
     };
 
     // Create a Mesh object
-    Mesh triangle(vertices);
+    Mesh triangle(vertices, indices, true, false);
 
     // Build and compile shaders
     Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
@@ -73,8 +78,8 @@ int main() {
         // Draw the triangle
         shader.use();
         triangle.bind();
-        glDrawArrays(GL_TRIANGLES, 0, 3);
-        triangle.unbind();
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+        //triangle.unbind();
 
         // Swap buffers and poll events
         glfwSwapBuffers(window);

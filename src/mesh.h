@@ -9,7 +9,7 @@ public:
     unsigned int VAO;
 
     // Constructor: takes vertex data and sets up the buffers
-    Mesh(const std::vector<float>& vertices);
+    Mesh(const std::vector<float>& vertices, const std::vector<unsigned int>& indices, bool isIndexed, bool wireframe);
 
     // Bind the VAO
     void bind() const;
@@ -22,6 +22,7 @@ public:
 
 private:
     unsigned int VBO;
+    unsigned int EBO;
 };
 
 #endif

@@ -1,6 +1,8 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
+#include "Shader.h"
+#include "Mesh.h"
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -8,6 +10,7 @@ const unsigned int SCR_HEIGHT = 600;
 
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);  
 void processInput(GLFWwindow *window);
+
 
 int main() {
     // Initialize GLFW
@@ -45,20 +48,41 @@ int main() {
         return -1;
     } 
 
+    // set up vertex data (and buffer(s)) and configure vertex attributes
+    std::vector<float> vertices = {
+        -0.5f, -0.5f, 0.0f, // left  
+         0.5f, -0.5f, 0.0f, // right 
+         0.0f,  0.5f, 0.0f  // top   
+    };
+
+    // Create a Mesh object
+    Mesh triangle(vertices);
+
+    // Build and compile shaders
+    Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+
     // Main loop
     while (!glfwWindowShouldClose(window)) {
+        // Process input
+        processInput(window);
+
+        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT);
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
-
-        // Process input
-        processInput(window);
+        // Draw the triangle
+        shader.use();
+        triangle.bind();
+        glDrawArrays(GL_TRIANGLES, 0, 3);
+        triangle.unbind();
 
         // Swap buffers and poll events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
+
+    triangle.unbind();
+    shader.deleteProgram();
 
     // Clean up and exit
     glfwDestroyWindow(window);

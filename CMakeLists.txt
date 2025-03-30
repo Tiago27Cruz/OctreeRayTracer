@@ -8,10 +8,11 @@ if (WIN32)
 
     set(GLFW_LIB_PATH "${CMAKE_SOURCE_DIR}/lib")
 
-    add_executable(edaa src/main.cpp src/glad.c src/shaders.cpp)
+    add_executable(edaa src/main.cpp src/glad.c src/shaders.cpp src/shader.h src/shader.cpp src/mesh.cpp src/mesh.h)
 
     target_link_directories(edaa PRIVATE "${GLFW_LIB_PATH}")
     target_link_libraries(edaa "${GLFW_LIB_PATH}\\libglfw3.a" opengl32)
+    file(COPY shaders DESTINATION ${CMAKE_BINARY_DIR})
 else()
     message(FATAL_ERROR "TODO: linux config")
 endif()

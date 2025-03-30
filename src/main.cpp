@@ -3,6 +3,7 @@
 #include <iostream>
 #include "Shader.h"
 #include "Mesh.h"
+#include <cmath>
 
 // settings
 const unsigned int SCR_WIDTH = 800;
@@ -75,8 +76,14 @@ int main() {
         // Clear the screen
         glClear(GL_COLOR_BUFFER_BIT);
 
-        // Draw the triangle
+        // Shaders
         shader.use();
+        float timeValue = glfwGetTime();
+        float greenValue = sin(timeValue) / 2.0f + 0.5f;
+        int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
+        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+
+        // Draw the triangle
         triangle.bind();
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
         //triangle.unbind();

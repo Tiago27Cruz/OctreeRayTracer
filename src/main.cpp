@@ -51,14 +51,12 @@ int main() {
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
     std::vector<float> vertices = {
-        0.5f,  0.5f, 0.0f,  // top right
-        0.5f, -0.5f, 0.0f,  // bottom right
-        -0.5f, -0.5f, 0.0f,  // bottom left
-        -0.5f,  0.5f, 0.0f   // top left 
+        0.5f, -0.5f, 0.0f,  1.0f, 0.0f, 0.0f,   // bottom right
+        -0.5f, -0.5f, 0.0f,  0.0f, 1.0f, 0.0f,   // bottom left
+        0.0f,  0.5f, 0.0f,  0.0f, 0.0f, 1.0f    // top 
     };
     std::vector<unsigned int> indices = {
-        0, 1, 3,
-        1, 2, 3
+        0, 1, 2
     };
 
     // Create a Mesh object
@@ -78,10 +76,7 @@ int main() {
 
         // Shaders
         shader.use();
-        float timeValue = glfwGetTime();
-        float greenValue = sin(timeValue) / 2.0f + 0.5f;
-        int vertexColorLocation = glGetUniformLocation(shader.ID, "ourColor");
-        glUniform4f(vertexColorLocation, 0.0f, greenValue, 0.0f, 1.0f);
+        shader.setFloat("ourColor",1.0f);
 
         // Draw the triangle
         triangle.bind();

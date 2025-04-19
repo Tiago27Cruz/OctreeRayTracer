@@ -1,9 +1,9 @@
 #include <glad/glad.h>
 #include <GLFW/glfw3.h>
 #include <iostream>
-#include "Shader.h"
-#include "Mesh.h"
-#include "camera.h"
+#include "opengl/Shader.h"
+#include "opengl/Mesh.h"
+#include "opengl/camera.h"
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>

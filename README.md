@@ -6,7 +6,7 @@ Projected developed for EDAA class @ FEUP - M.EIC
 
 - Run in root ``cmake -G "Unix Makefiles" -S . -B build``
 
-If it doesn't work add
+If it doesn't work add the direct paths to GCC and G++, i.e.
 -  ``-DCMAKE_C_COMPILER="C:/msys64/ucrt64/bin/gcc.exe" -DCMAKE_CXX_COMPILER="C:/msys64/ucrt64/bin/g++.exe"``
 
 Then inside ``/build/`` run ```make```

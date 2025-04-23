@@ -208,7 +208,7 @@ int main() {
         // Process input
         processInput(window);
 
-        glClearColor(0.2f, 0.3f, 0.3f, 1.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
@@ -222,6 +222,16 @@ int main() {
         // Shaders
         shader.use();
         shader.setMat4("view", view); // Set the view matrix uniform
+        shader.setVec3("iResolution", SCR_WIDTH, SCR_HEIGHT, 0.0f); // Set the resolution uniform
+        shader.setFloat("iTime", glfwGetTime()); // Set the time uniform
+        shader.setFloat("iTimeDelta", deltaTime); // Set the time delta uniform
+        shader.setFloat("iFrameRate", 1.0f / deltaTime); // Set the frame rate uniform
+        shader.setInt("iFrame", static_cast<int>(currentFrame)); // Set the frame uniform
+        shader.setFloat("iChannelTime[0]", glfwGetTime()); // Set the channel time uniform
+        shader.setVec3("iChannelResolution[0]", SCR_WIDTH, SCR_HEIGHT, 0.0f); // Set the channel resolution uniform
+        shader.setVec4("iMouse", 0.0f, 0.0f, 0.0f, 0.0f); // Set the mouse uniform
+        shader.setVec4("iDate", 0.0f, 0.0f, 0.0f, 0.0f); // Set the date uniform
+        shader.setFloat("iSampleRate", 44100.0f); // Set the sample rate uniform
 
         // Draw the triangle
         triangle.bind();

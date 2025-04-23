@@ -363,20 +363,20 @@ void Camera_init(out Camera camera, vec3 lookfrom, vec3 lookat, vec3 vup, float 
 
 void Camera_initFromViewMatrix(out Camera camera, mat4 viewMatrix, vec3 position, float fovDegrees, float aspect)
 {
-    // Extract camera vectors from view matrix
+    // Extract camera vectors
     camera.origin = position;
     
-    // Extract camera orientation from view matrix
-    camera.w = -vec3(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2]); // Forward direction (negated because view looks in -z)
-    camera.u = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);  // Right vector
-    camera.v = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);  // Up vector
+    // Extract camera orientation from view matrix (normalized)
+    camera.w = normalize(-vec3(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2]));
+    camera.u = normalize(vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]));
+    camera.v = normalize(vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]));
     
     // Set lens parameters
-    float aperture = 0.1; // You could pass this as a uniform too
+    float aperture = 0.1;
     camera.lensRadius = aperture / 2.0;
     
     // Set up the camera frustum
-    float distToFocus = 10.0; // Could also be a uniform
+    float distToFocus = 10.0;
     
     float theta = fovDegrees * PI / 180.0;
     float halfHeight = tan(theta / 2.0);

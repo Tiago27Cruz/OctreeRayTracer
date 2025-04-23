@@ -11,6 +11,6 @@ uniform vec3 iResolution;
 
 void main()
 {
-    gl_Position = projection * view * model * vec4(aPos, 1.0);
+    gl_Position = vec4(aPos, 1.0);
     FragCoord = (gl_Position.xy / gl_Position.w + 1.0) / 2.0 * iResolution.xy;
 }

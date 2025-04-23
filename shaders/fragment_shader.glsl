@@ -1,9 +1,20 @@
 
 #version 330 core
+#define PI 			3.1415926535
+#define MAXFLOAT	99999.99
+
+#define MAXDEPTH 	5
+#define NUMSAMPLES 	4
+#define ROTATION	true
+
 out vec4 FragColor;
 
-in vec2 TexCoord; 
-uniform mat4    view;
+in vec2 FragCoord; 
+
+uniform mat4      view;                  // View Matrix
+uniform vec3 cameraPosition;    // Add a new uniform for camera position
+uniform float cameraZoom;       // Add a new uniform for camera FOV/zoom
+
 uniform vec3      iResolution;           // viewport resolution (in pixels)
 uniform float     iTime;                 // shader playback time (in seconds)
 uniform float     iTimeDelta;            // render time (in seconds)
@@ -15,13 +26,7 @@ uniform vec4      iMouse;                // mouse pixel coords. xy: current (if 
 uniform vec4      iDate;                 // (year, month, day, time in seconds)
 uniform float     iSampleRate;           // sound sample rate (i.e., 44100)
                 
-#define PI 			3.1415926535
-#define MAXFLOAT	99999.99
 
-// change these parameters for better quality (and lower framerate :-)
-#define MAXDEPTH 	5
-#define NUMSAMPLES 	4
-#define ROTATION	true
 
 
 struct Ray
@@ -356,6 +361,35 @@ void Camera_init(out Camera camera, vec3 lookfrom, vec3 lookat, vec3 vup, float 
     camera.vertical   = 2.0 * halfHeight * focusDist * camera.v;
 }
 
+void Camera_initFromViewMatrix(out Camera camera, mat4 viewMatrix, vec3 position, float fovDegrees, float aspect)
+{
+    // Extract camera vectors from view matrix
+    camera.origin = position;
+    
+    // Extract camera orientation from view matrix
+    camera.w = -vec3(viewMatrix[0][2], viewMatrix[1][2], viewMatrix[2][2]); // Forward direction (negated because view looks in -z)
+    camera.u = vec3(viewMatrix[0][0], viewMatrix[1][0], viewMatrix[2][0]);  // Right vector
+    camera.v = vec3(viewMatrix[0][1], viewMatrix[1][1], viewMatrix[2][1]);  // Up vector
+    
+    // Set lens parameters
+    float aperture = 0.1; // You could pass this as a uniform too
+    camera.lensRadius = aperture / 2.0;
+    
+    // Set up the camera frustum
+    float distToFocus = 10.0; // Could also be a uniform
+    
+    float theta = fovDegrees * PI / 180.0;
+    float halfHeight = tan(theta / 2.0);
+    float halfWidth = aspect * halfHeight;
+    
+    camera.lowerLeftCorner = camera.origin - halfWidth * distToFocus * camera.u
+                                          - halfHeight * distToFocus * camera.v
+                                          - distToFocus * camera.w;
+                                          
+    camera.horizontal = 2.0 * halfWidth * distToFocus * camera.u;
+    camera.vertical = 2.0 * halfHeight * distToFocus * camera.v;
+}
+
 // uniform camera_up
 
 Ray Camera_getRay(Camera camera, float s, float t)
@@ -530,34 +564,21 @@ vec3 radiance(Ray ray)
 
 void main()
 {   
-    vec3 lookfrom = vec3(13.0, 2.0, 3.0);
-    const vec3 lookat = vec3(0.0, 0.0, 0.0);
-    float distToFocus = 10.0;
-    float aperture = 0.1;
-
-    if(ROTATION)
-    {
-        float angle = iTime / 2.0;
-    	mat4 rotationMatrix = mat4(cos(angle), 0.0, sin(angle), 0.0,
-                                          0.0, 1.0,        0.0, 0.0,
-                                 -sin(angle),  0.0, cos(angle), 0.0,
-                                         0.0,  0.0,        0.0, 1.0);
-    
-    	lookfrom = vec3(rotationMatrix * vec4(lookfrom, 1.0));
-    }
-    
+    // Instead of hardcoding camera parameters, use the view matrix
     Camera camera;
-    Camera_init(camera, lookfrom, lookat, vec3(0.0f, 1.0f, 0.0f), 20.0f, float(iResolution.x) / float(iResolution.y), aperture, distToFocus);
+    
+    // Use the uniforms passed from C++
+    Camera_initFromViewMatrix(camera, view, cameraPosition, cameraZoom, 
+                            float(iResolution.x) / float(iResolution.y));
 
-
-    randState = TexCoord.xy / iResolution.xy;
+    randState = FragCoord.xy / iResolution.xy;
     
     vec3 col = vec3(0.0, 0.0, 0.0);
 
     for (int s = 0; s < NUMSAMPLES; s++)
     {
-        float u = float(TexCoord.x + rand2D()) / float(iResolution.x);
-        float v = float(TexCoord.y + rand2D()) / float(iResolution.y);
+        float u = float(FragCoord.x + rand2D()) / float(iResolution.x);
+        float v = float(FragCoord.y + rand2D()) / float(iResolution.y);
 
         Ray r = Camera_getRay(camera, u, v);
         col += radiance(r);

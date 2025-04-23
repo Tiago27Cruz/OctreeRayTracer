@@ -159,12 +159,26 @@ int main() {
     // Create a Mesh object
     Mesh triangle(vertices, indices, true, false);
 
+    std::vector<float> quadVertices = {
+        // positions        // texture coords
+        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        
+        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
+        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
+        1.0f,  1.0f, 0.0f, 1.0f, 1.0f
+    };
+
+    // Create a simple mesh for the quad
+    Mesh raytracingQuad(quadVertices, {}, false, false);
+
     glEnable(GL_DEPTH_TEST);
 
     // Build and compile shaders
     Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
 
-    // Texture
+    /*// Texture
     unsigned int texture1;
     // texture 1
     // ---------
@@ -191,9 +205,10 @@ int main() {
         std::cout << "Failed to load texture" << std::endl;
     }
     stbi_image_free(data);
+    */
 
     shader.use();
-    shader.setInt("texture1", 0); // Set the texture uniform to 0 (GL_TEXTURE0)
+    //shader.setInt("texture1", 0); // Set the texture uniform to 0 (GL_TEXTURE0)
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
     shader.setMat4("projection", projection); // Set the projection matrix uniform
@@ -212,16 +227,16 @@ int main() {
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
-        glActiveTexture(GL_TEXTURE0);
-        glBindTexture(GL_TEXTURE_2D, texture1);
+        //glActiveTexture(GL_TEXTURE0);
+        //glBindTexture(GL_TEXTURE_2D, texture1);
 
         glm::mat4 view = camera.GetViewMatrix();
-        // note that we're translating the scene in the reverse direction of where we want to move
-        view = glm::translate(view, glm::vec3(0.0f, 0.0f, -3.0f)); 
 
         // Shaders
         shader.use();
         shader.setMat4("view", view); // Set the view matrix uniform
+        shader.setVec3("cameraPosition", camera.Position);  // Pass camera position
+        shader.setFloat("cameraZoom", camera.Zoom);  
         shader.setVec3("iResolution", SCR_WIDTH, SCR_HEIGHT, 0.0f); // Set the resolution uniform
         shader.setFloat("iTime", glfwGetTime()); // Set the time uniform
         shader.setFloat("iTimeDelta", deltaTime); // Set the time delta uniform
@@ -232,6 +247,9 @@ int main() {
         shader.setVec4("iMouse", 0.0f, 0.0f, 0.0f, 0.0f); // Set the mouse uniform
         shader.setVec4("iDate", 0.0f, 0.0f, 0.0f, 0.0f); // Set the date uniform
         shader.setFloat("iSampleRate", 44100.0f); // Set the sample rate uniform
+
+        //raytracingQuad.bind();
+        //glDrawArrays(GL_TRIANGLES, 0, 6);
 
         // Draw the triangle
         triangle.bind();

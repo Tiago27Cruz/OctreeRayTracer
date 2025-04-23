@@ -5,7 +5,6 @@
 
 #define MAXDEPTH 	5
 #define NUMSAMPLES 	4
-#define ROTATION	true
 
 out vec4 FragColor;
 
@@ -336,30 +335,6 @@ struct Camera
     vec3 u, v, w;
     float lensRadius;
 };
-    
-    
-// vfov is top to bottom in degrees
-void Camera_init(out Camera camera, vec3 lookfrom, vec3 lookat, vec3 vup, float vfov, float aspect, float aperture, float focusDist)
-{
-    camera.lensRadius = aperture / 2.0;
-    
-    float theta = vfov * PI / 180.0;
-    float halfHeight = tan(theta / 2.0);
-    float halfWidth = aspect * halfHeight;
-
-    camera.origin = lookfrom;
-
-    camera.w = normalize(lookfrom - lookat);
-    camera.u = normalize(cross(vup, camera.w));
-    camera.v = cross(camera.w, camera.u);
-
-    camera.lowerLeftCorner = camera.origin  - halfWidth  * focusDist * camera.u
-                                            - halfHeight * focusDist * camera.v
-                                            -              focusDist * camera.w;
-
-    camera.horizontal = 2.0 * halfWidth  * focusDist * camera.u;
-    camera.vertical   = 2.0 * halfHeight * focusDist * camera.v;
-}
 
 void Camera_initFromViewMatrix(out Camera camera, mat4 viewMatrix, vec3 position, float fovDegrees, float aspect)
 {

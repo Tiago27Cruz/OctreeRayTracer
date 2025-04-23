@@ -4,6 +4,7 @@
 #include "opengl/Shader.h"
 #include "opengl/Mesh.h"
 #include "opengl/camera.h"
+#include "opengl/Sphere.h"
 #include <cmath>
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -73,105 +74,179 @@ int main() {
     } 
 
     // set up vertex data (and buffer(s)) and configure vertex attributes
-    std::vector<float> vertices = {
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 0.0f,
-    
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 1.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-    
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-    
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f, -0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f, -0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f, -0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f, -0.5f, -0.5f,  0.0f, 1.0f,
-    
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f,
-         0.5f,  0.5f, -0.5f,  1.0f, 1.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-         0.5f,  0.5f,  0.5f,  1.0f, 0.0f,
-        -0.5f,  0.5f,  0.5f,  0.0f, 0.0f,
-        -0.5f,  0.5f, -0.5f,  0.0f, 1.0f
-    };
-    
-    std::vector<unsigned int> indices = {
-        //Top
-        2, 6, 7,
-        2, 3, 7,
-
-        //Bottom
-        0, 4, 5,
-        0, 1, 5,
-
-        //Left
-        0, 2, 6,
-        0, 4, 6,
-
-        //Right
-        1, 3, 7,
-        1, 5, 7,
-
-        //Front
-        0, 2, 3,
-        0, 1, 3,
-
-        //Back
-        4, 6, 7,
-        4, 5, 7
-    };
-
-    glm::vec3 cubePositions[] = {
-        glm::vec3( 0.0f,  0.0f,  0.0f), 
-        glm::vec3( 2.0f,  5.0f, -15.0f), 
-        glm::vec3(-1.5f, -2.2f, -2.5f),  
-        glm::vec3(-3.8f, -2.0f, -12.3f),  
-        glm::vec3( 2.4f, -0.4f, -3.5f),  
-        glm::vec3(-1.7f,  3.0f, -7.5f),  
-        glm::vec3( 1.3f, -2.0f, -2.5f),  
-        glm::vec3( 1.5f,  2.0f, -2.5f), 
-        glm::vec3( 1.5f,  0.2f, -1.5f), 
-        glm::vec3(-1.3f,  1.0f, -1.5f)  
-    };
-
-    // Create a Mesh object
-    Mesh triangle(vertices, indices, true, false);
-
-    std::vector<float> quadVertices = {
-        // positions        // texture coords
-        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-        -1.0f, -1.0f, 0.0f, 0.0f, 0.0f,
-        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        
-        -1.0f,  1.0f, 0.0f, 0.0f, 1.0f,
-        1.0f, -1.0f, 0.0f, 1.0f, 0.0f,
-        1.0f,  1.0f, 0.0f, 1.0f, 1.0f
+    std::vector<Sphere> spheres = {
+        Sphere(1000.000000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(0.200000f),
+        Sphere(1.000000f),
+        Sphere(1.000000f),
+        Sphere(1.000000f)
     };
 
-    // Create a simple mesh for the quad
-    Mesh raytracingQuad(quadVertices, {}, false, false);
+    glm::vec3 spherePosition[] = {
+        glm::vec3( 0.000000f, -1000.000000f, 0.000000f),
+        glm::vec3( -7.995381f, 0.200000f, -7.478668f),
+        glm::vec3( -7.696819f, 0.200000f, -5.468978f),
+        glm::vec3( -7.824804f, 0.200000f, -3.120637f),
+        glm::vec3( -7.132909f, 0.200000f, -1.701323f),
+        glm::vec3( -7.569523f, 0.200000f, 0.494554f),
+        glm::vec3( -7.730332f, 0.200000f, 2.358976f),
+        glm::vec3( -7.892865f, 0.200000f, 4.753728f),
+        glm::vec3( -7.656691f, 0.200000f, 6.888913f),
+        glm::vec3( -7.217835f, 0.200000f, 8.203466f),
+        glm::vec3( -5.115232f, 0.200000f, -7.980404f),
+        glm::vec3( -5.323222f, 0.200000f, -5.113037f),
+        glm::vec3( -5.410681f, 0.200000f, -3.527741f),
+        glm::vec3( -5.460670f, 0.200000f, -1.166543f),
+        glm::vec3( -5.457659f, 0.200000f, 0.363870f),
+        glm::vec3( -5.798715f, 0.200000f, 2.161684f),
+        glm::vec3( -5.116586f, 0.200000f, 4.470188f),
+        glm::vec3( -5.273591f, 0.200000f, 6.795187f),
+        glm::vec3( -5.120286f, 0.200000f, 8.731398f),
+        glm::vec3( -3.601565f, 0.200000f, -7.895600f),
+        glm::vec3( -3.735860f, 0.200000f, -5.163056f),
+        glm::vec3( -3.481116f, 0.200000f, -3.794556f),
+        glm::vec3( -3.866858f, 0.200000f, -1.465965f),
+        glm::vec3( -3.168870f, 0.200000f, 0.553099f),
+        glm::vec3( -3.428552f, 0.200000f, 2.627547f),
+        glm::vec3( -3.771736f, 0.200000f, 4.324785f),
+        glm::vec3( -3.768522f, 0.200000f, 6.384588f),
+        glm::vec3( -3.286992f, 0.200000f, 8.441148f),
+        glm::vec3( -1.552127f, 0.200000f, -7.728200f),
+        glm::vec3( -1.360796f, 0.200000f, -5.346098f),
+        glm::vec3( -1.287209f, 0.200000f, -3.735321f),
+        glm::vec3( -1.344859f, 0.200000f, -1.726654f),
+        glm::vec3( -1.974774f, 0.200000f, 0.183260f),
+        glm::vec3( -1.542872f, 0.200000f, 2.067868f),
+        glm::vec3( -1.743856f, 0.200000f, 4.752810f),
+        glm::vec3( -1.955621f, 0.200000f, 6.493702f),
+        glm::vec3( -1.350449f, 0.200000f, 8.068503f),
+        glm::vec3( 0.706123f, 0.200000f, -7.116040f),
+        glm::vec3( 0.897766f, 0.200000f, -5.938681f),
+        glm::vec3( 0.744113f, 0.200000f, -3.402960f),
+        glm::vec3( 0.867750f, 0.200000f, -1.311908f),
+        glm::vec3( 0.082480f, 0.200000f, 0.838206f),
+        glm::vec3( 0.649692f, 0.200000f, 2.525103f),
+        glm::vec3( 0.378574f, 0.200000f, 4.055579f),
+        glm::vec3( 0.425844f, 0.200000f, 6.098526f),
+        glm::vec3( 0.261365f, 0.200000f, 8.661150f),
+        glm::vec3( 2.814218f, 0.200000f, -7.751227f),
+        glm::vec3( 2.050073f, 0.200000f, -5.731364f),
+        glm::vec3( 2.020130f, 0.200000f, -3.472627f),
+        glm::vec3( 2.884277f, 0.200000f, -1.232662f),
+        glm::vec3( 2.644454f, 0.200000f, 0.596324f),
+        glm::vec3( 2.194283f, 0.200000f, 2.880603f),
+        glm::vec3( 2.281000f, 0.200000f, 4.094307f),
+        glm::vec3( 2.080841f, 0.200000f, 6.716384f),
+        glm::vec3( 2.287131f, 0.200000f, 8.583242f),
+        glm::vec3( 4.329136f, 0.200000f, -7.497218f),
+        glm::vec3( 4.502115f, 0.200000f, -5.941060f),
+        glm::vec3( 4.750631f, 0.200000f, -3.836759f),
+        glm::vec3( 4.082084f, 0.200000f, -1.180746f),
+        glm::vec3( 4.429173f, 0.200000f, 2.069721f),
+        glm::vec3( 4.277152f, 0.200000f, 4.297482f),
+        glm::vec3( 4.012743f, 0.200000f, 6.225072f),
+        glm::vec3( 4.047066f, 0.200000f, 8.419360f),
+        glm::vec3( 6.441846f, 0.200000f, -7.700798f),
+        glm::vec3( 6.047810f, 0.200000f, -5.519369f),
+        glm::vec3( 6.779211f, 0.200000f, -3.740542f),
+        glm::vec3( 6.430776f, 0.200000f, -1.332107f),
+        glm::vec3( 6.476387f, 0.200000f, 0.329973f),
+        glm::vec3( 6.568686f, 0.200000f, 2.116949f),
+        glm::vec3( 6.371189f, 0.200000f, 4.609841f),
+        glm::vec3( 6.011877f, 0.200000f, 6.569579f),
+        glm::vec3( 6.096087f, 0.200000f, 8.892333f),
+        glm::vec3( 8.185763f, 0.200000f, -7.191109f),
+        glm::vec3( 8.411960f, 0.200000f, -5.285309f),
+        glm::vec3( 8.047109f, 0.200000f, -3.427552f),
+        glm::vec3( 8.119639f, 0.200000f, -1.652587f),
+        glm::vec3( 8.818120f, 0.200000f, 0.401292f),
+        glm::vec3( 8.754155f, 0.200000f, 2.152549f),
+        glm::vec3( 8.595298f, 0.200000f, 4.802001f),
+        glm::vec3( 8.036216f, 0.200000f, 6.739752f),
+        glm::vec3( 8.256561f, 0.200000f, 8.129115f),
+        glm::vec3( 0.000000f, 1.000000f, 0.000000f),
+        glm::vec3( -4.000000f, 1.000000f, 0.000000f),
+        glm::vec3( 4.000000f, 1.000000f, 0.000000f)
+    };
 
     glEnable(GL_DEPTH_TEST);
 
@@ -223,7 +298,7 @@ int main() {
         // Process input
         processInput(window);
 
-        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
         glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 
         // bind textures on corresponding texture units
@@ -233,7 +308,7 @@ int main() {
         glm::mat4 view = camera.GetViewMatrix();
 
         // Shaders
-        shader.use();
+        //shader.use();
         shader.setMat4("view", view); // Set the view matrix uniform
         shader.setVec3("cameraPosition", camera.Position);  // Pass camera position
         shader.setFloat("cameraZoom", camera.Zoom);  
@@ -251,28 +326,23 @@ int main() {
         //raytracingQuad.bind();
         //glDrawArrays(GL_TRIANGLES, 0, 6);
 
-        // Draw the triangle
-        triangle.bind();
-        for (unsigned int i = 0; i < 10; i++)
+        /*
+        for (unsigned int i = 0; i < spheres.size(); i++)
         {
-            // calculate the model matrix for each object and pass it to shader before drawing
-            glm::mat4 model = glm::mat4(1.0f);
-            model = glm::translate(model, cubePositions[i]);
-            float angle = 20.0f * i;
-            model = glm::rotate(model, glm::radians(angle), glm::vec3(1.0f, 0.3f, 0.5f));
-            shader.setMat4("model", model);
-
-            glDrawArrays(GL_TRIANGLES, 0, 36);
-        }
+           // glm::mat4 model = glm::mat4(1.0f);
+            //model = glm::translate(model, spherePosition[i]);
+            //shader.setMat4("model", model);
+            spheres[i].draw();
+            std::cout<<"draw sphere "<<i<<std::endl;
+        }*/
         //glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-        //triangle.unbind();
-
+        Sphere sphere1 = Sphere(1.0f);
+        sphere1.draw();
         // Swap buffers and poll events
         glfwSwapBuffers(window);
         glfwPollEvents();
     }
 
-    triangle.unbind();
     shader.deleteProgram();
 
     // Clean up and exit

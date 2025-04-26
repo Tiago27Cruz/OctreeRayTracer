@@ -539,12 +539,9 @@ vec3 radiance(Ray ray)
 
 void main()
 {   
-    // Instead of hardcoding camera parameters, use the view matrix
     Camera camera;
     
-    // Use the uniforms passed from C++
-    Camera_initFromViewMatrix(camera, view, cameraPosition, cameraZoom, 
-                            float(iResolution.x) / float(iResolution.y));
+    Camera_initFromViewMatrix(camera, view, cameraPosition, cameraZoom, float(iResolution.x) / float(iResolution.y));
 
     randState = FragCoord.xy / iResolution.xy;
     

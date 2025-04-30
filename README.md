@@ -19,3 +19,8 @@ Then inside ``/build/`` run ```make```
         "Path": "C:\\cygwin64\\bin;${env:Path}"
     } in settings.json
 4-install Cmake
+
+## References
+
+- https://www.cs.swarthmore.edu/~jcarste1/pdfs/octree.pdf
+- http://wscg.zcu.cz/wscg2000/Papers_2000/X31.pdf

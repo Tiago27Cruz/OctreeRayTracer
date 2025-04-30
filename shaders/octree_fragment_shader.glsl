@@ -1,5 +1,8 @@
 #version 330 core
 
+#define NUMRAYS 10
+
+
 out vec4 FragColor;
 
 in vec2 FragCoord; 
@@ -19,9 +22,10 @@ uniform vec4      iMouse;                // mouse pixel coords. xy: current (if 
 uniform vec4      iDate;                 // (year, month, day, time in seconds)
 uniform float     iSampleRate;           // sound sample rate (i.e., 44100)
 
+vec2 randState;
+
 struct OctreeNode {
     bool isLeaf;
-    int children[8];
 };
 struct Octree {
     OctreeNode root;
@@ -76,7 +80,83 @@ Camera initCamera(){
     return cam;
 }
 
+Octree createScene(){
+    Octree octree;
+
+    OctreeNode rootNode;
+
+
+    octree.root = rootNode;
+
+}
+
+Ray generateRay(float x, float y, Camera cam){
+    Ray ray;
+    ray.origin = cam.origin;
+    ray.direction = cam.lowerLeftCorner + x * cam.horizontal + y * cam.vertical - cam.origin;
+    return ray;
+}
+
+vec2 rand2D(){
+    randState.x = fract(sin(dot(randState.xy, vec2(12.9898, 78.233))) * 43758.5453);
+    randState.y = fract(sin(dot(randState.xy, vec2(12.9898, 78.233))) * 43758.5453);;
+    
+    return randState.x;
+}
+
+vec3 random_in_unit_disk(){
+    float spx = 2.0 * rand2D() - 1.0;
+    float spy = 2.0 * rand2D() - 1.0;
+
+    float r, phi;
+
+    if(spx > -spy){
+        if(spx > spy){
+            r = spx;
+            phi = spy / spx;
+        }
+        else{
+            r = spy;
+            phi = 2.0 - spx / spy;
+        }
+    }
+    else{
+        if(spx < spy){
+            r = -spx;
+            phi = 4.0f + spy / spx;
+        }else{
+            r = -spy;
+
+            if(spy != 0.0)
+                phi = 6.0 - spx / spy;
+            else
+                phi = 0.0;
+        }
+    }
+
+    phi *= PI / 4.0;
+
+    return vec3(r * cos(phi), r * sin(phi), 0.0f);
+}
+
 void main{
     Camera cam = initCamera();
-    
+
+    randState = FragCoord.xy / iResolution.xy;
+
+    vec3 col = vec3(0.0, 0.0, 0.0);
+
+    for (int s = 0; s < NUMRAYS; s++)
+    {
+        float u = float(FragCoord.x + rand2D()) / float(iResolution.x);
+        float v = float(FragCoord.y + rand2D()) / float(iResolution.y);
+
+        Ray r = Camera_getRay(camera, u, v);
+        col += radiance(r);
+    }
+
+    col /= float(NUMRAYS);
+    col = vec3( sqrt(col[0]), sqrt(col[1]), sqrt(col[2]) );
+
+    FragColor = vec4(col, 1.0);
 }

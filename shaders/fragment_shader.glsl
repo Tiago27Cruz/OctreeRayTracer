@@ -365,8 +365,6 @@ void Camera_initFromViewMatrix(out Camera camera, mat4 viewMatrix, vec3 position
     camera.vertical = 2.0 * halfHeight * distToFocus * camera.v;
 }
 
-// uniform camera_up
-
 Ray Camera_getRay(Camera camera, float s, float t)
 {
     vec3 rd = camera.lensRadius * random_in_unit_disk();

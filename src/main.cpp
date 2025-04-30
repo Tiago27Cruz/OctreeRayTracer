@@ -83,7 +83,6 @@ int main() {
         1.0f,  1.0f, 0.0f, 1.0f, 1.0f
     };
 
-    // Create a simple mesh for the quad
     Mesh raytracingQuad(quadVertices, {}, false, false);
 
     glEnable(GL_DEPTH_TEST);
@@ -94,7 +93,7 @@ int main() {
     shader.use();
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
-    shader.setMat4("projection", projection); // Set the projection matrix uniform
+    shader.setMat4("projection", projection); 
 
     // Main loop
     while (!glfwWindowShouldClose(window)) {
@@ -113,24 +112,24 @@ int main() {
 
         // Shaders
         shader.use();
-        shader.setMat4("view", view); // Set the view matrix uniform
-        shader.setVec3("cameraPosition", camera.Position);  // Pass camera position
+        shader.setMat4("view", view); 
+        shader.setVec3("cameraPosition", camera.Position); 
         shader.setFloat("cameraZoom", camera.Zoom);  
-        shader.setVec3("iResolution", SCR_WIDTH, SCR_HEIGHT, 0.0f); // Set the resolution uniform
-        shader.setFloat("iTime", glfwGetTime()); // Set the time uniform
-        shader.setFloat("iTimeDelta", deltaTime); // Set the time delta uniform
-        shader.setFloat("iFrameRate", 1.0f / deltaTime); // Set the frame rate uniform
-        shader.setInt("iFrame", static_cast<int>(currentFrame)); // Set the frame uniform
-        shader.setFloat("iChannelTime[0]", glfwGetTime()); // Set the channel time uniform
-        shader.setVec3("iChannelResolution[0]", SCR_WIDTH, SCR_HEIGHT, 0.0f); // Set the channel resolution uniform
-        shader.setVec4("iMouse", 0.0f, 0.0f, 0.0f, 0.0f); // Set the mouse uniform
-        shader.setVec4("iDate", 0.0f, 0.0f, 0.0f, 0.0f); // Set the date uniform
-        shader.setFloat("iSampleRate", 44100.0f); // Set the sample rate uniform
+        shader.setVec3("iResolution", SCR_WIDTH, SCR_HEIGHT, 0.0f); 
+        shader.setFloat("iTime", glfwGetTime()); 
+        shader.setFloat("iTimeDelta", deltaTime);
+        shader.setFloat("iFrameRate", 1.0f / deltaTime);
+        shader.setInt("iFrame", static_cast<int>(currentFrame));
+        shader.setFloat("iChannelTime[0]", glfwGetTime()); 
+        shader.setVec3("iChannelResolution[0]", SCR_WIDTH, SCR_HEIGHT, 0.0f);
+        shader.setVec4("iMouse", 0.0f, 0.0f, 0.0f, 0.0f);
+        shader.setVec4("iDate", 0.0f, 0.0f, 0.0f, 0.0f); 
+        shader.setFloat("iSampleRate", 44100.0f); 
 
-        // Set model to identity for the fullscreen quad
+        
         shader.setMat4("model", glm::mat4(1.0f));
 
-        // Draw the fullscreen quad instead of individual spheres
+       
         raytracingQuad.bind();
         glDrawArrays(GL_TRIANGLES, 0, 6);
 

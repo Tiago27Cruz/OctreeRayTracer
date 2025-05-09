@@ -11,6 +11,14 @@ If it doesn't work add the direct paths to GCC and G++, i.e.
 
 Then inside ``/build/`` run ```make```
 
+## Architecture
+
+Our code will be divided in two parts, the CPU, which will do the work that happens once and the Shaders, which does things that need to be done many times per second.
+This way, we ease the load of work on the GPU, making our app more efficient.
+
+- CPU (normal C/C++ files): Build scene -> Build octree -> Send both to GPU
+- GPU (shaders): For each ray -> Traverse octree -> Test only relevant spheres
+
 ## Notes 
 
 1- Install something for cpp and make like Mingw

@@ -26,6 +26,11 @@ vec2 randState;
 
 struct OctreeNode {
     bool isLeaf;
+    vec3 min;               // Bounding box min corner
+    vec3 max;               // Bounding box max corner
+    int childrenOffset;     // Offset to children in flat array (-1 if leaf)
+    int objectsOffset;      // Offset to object indices array (-1 if not leaf)
+    int objectCount;        // Number of objects in this node
 };
 struct Octree {
     OctreeNode root;

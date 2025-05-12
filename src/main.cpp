@@ -64,7 +64,7 @@ int main() {
     std::vector<Sphere> spheres = generateSpheres();
 
     // Create and build octree
-    Octree octree(8, 4); // Max depth 8, max 4 spheres per leaf
+    Octree octree(16, 1); // Max depth 8, max 4 spheres per leaf
     octree.build(spheres);
 
     std::vector<GPUOctreeNode> flattenedNodes = octree.flattenTree();

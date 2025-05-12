@@ -1,7 +1,7 @@
 #version 430 core
 
-#define NUMSAMPLES 4
-#define MAXDEPTH 5
+#define NUMSAMPLES 8
+#define MAXDEPTH 10
 #define MAXFLOAT 3.402823466e+38
 #define PI 3.14159265359
 #define LAMBERT 0
@@ -60,13 +60,16 @@ struct Ray {
     vec3 direction;
 };
 
-// Intersection info
-struct IntersectInfo {
+struct IntersectInfo
+{
+    // surface properties
     float t;
-    vec3 point;
-    vec3 normal;
-    int materialType;
-    vec3 albedo;
+    vec3  point;
+    vec3  normal;
+	
+    // material properties
+    int   materialType;
+    vec3  albedo;
     float fuzz;
     float refractionIndex;
 };
@@ -254,8 +257,7 @@ bool rayBoxIntersection(Ray ray, vec3 boxMin, vec3 boxMax, out float tmin, out f
 }
 
 bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
-    // Stack-based iterative traversal (simulates recursion)
-    const int MAX_STACK = 64; // Maximum depth of octree stack
+    const int MAX_STACK = 100;
     int nodeStack[MAX_STACK];
     float tminStack[MAX_STACK];
     float tmaxStack[MAX_STACK];
@@ -330,10 +332,6 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     return hit_anything;
 }
 
-bool intersectScene(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
-    return traverseOctree(ray, t_min, t_max, rec);
-}
-
 // Material functions for BSDF
 bool reflectVec(vec3 v, vec3 n, out vec3 reflected) {
     reflected = v - 2.0 * dot(v, n) * n;
@@ -361,7 +359,6 @@ bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 att
     int materialType = isectInfo.materialType;
     
     if (materialType == LAMBERT) {
-        // Lambertian (diffuse) material
         vec3 target = isectInfo.point + isectInfo.normal + random_in_unit_sphere();
         wi.origin = isectInfo.point;
         wi.direction = normalize(target - isectInfo.point);
@@ -369,19 +366,28 @@ bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 att
         return true;
     } 
     else if (materialType == METAL) {
-        // Metal (reflective) material
-        vec3 reflected;
-        reflectVec(normalize(wo.direction), isectInfo.normal, reflected);
-        
+        //vec3 reflected;
+        //reflectVec(normalize(wo.direction), isectInfo.normal, reflected);
+        //
+        //wi.origin = isectInfo.point;
+        //wi.direction = normalize(reflected + isectInfo.fuzz * random_in_unit_sphere());
+        //attenuation = isectInfo.albedo;
+        //
+        //return dot(wi.direction, isectInfo.normal) > 0.0;
+        float fuzz = isectInfo.fuzz;
+
+        vec3 reflected = reflect(normalize(wo.direction), isectInfo.normal);
+
         wi.origin = isectInfo.point;
-        wi.direction = normalize(reflected + isectInfo.fuzz * random_in_unit_sphere());
+        wi.direction = reflected + fuzz * random_in_unit_sphere();
+
         attenuation = isectInfo.albedo;
-        
-        return dot(wi.direction, isectInfo.normal) > 0.0;
+
+        return (dot(wi.direction, isectInfo.normal) > 0.0f);
     }
     else if (materialType == DIELECTRIC) {
         // Dielectric (transparent) material
-        vec3 outward_normal;
+        /*vec3 outward_normal;
         vec3 reflected;
         reflectVec(wo.direction, isectInfo.normal, reflected);
         
@@ -414,6 +420,48 @@ bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 att
             wi.direction = normalize(refracted);
         }
         
+        return true;*/
+        vec3 outward_normal;
+        vec3 reflected = reflect(wo.direction, isectInfo.normal);
+
+        float ni_over_nt;
+
+        attenuation = vec3(1.0f, 1.0f, 1.0f);
+        vec3 refracted;
+        float reflect_prob;
+        float cosine;
+
+        float rafractionIndex = isectInfo.refractionIndex;
+
+        if (dot(wo.direction, isectInfo.normal) > 0.0f)
+        {
+            outward_normal = -isectInfo.normal;
+            ni_over_nt = rafractionIndex;
+           
+            cosine = dot(wo.direction, isectInfo.normal) / length(wo.direction);
+            cosine = sqrt(1.0f - rafractionIndex * rafractionIndex * (1.0f - cosine * cosine));
+        }
+        else
+        {
+            outward_normal = isectInfo.normal;
+            ni_over_nt = 1.0f / rafractionIndex;
+            cosine = -dot(wo.direction, isectInfo.normal) / length(wo.direction);
+        }
+        if (refractVec(wo.direction, outward_normal, ni_over_nt, refracted))
+            reflect_prob = schlick(cosine, rafractionIndex);
+        else
+            reflect_prob = 1.0f;
+        if (rand2D() < reflect_prob)
+        {
+            wi.origin = isectInfo.point;
+            wi.direction = reflected;
+        }
+        else
+        {
+            wi.origin = isectInfo.point;
+            wi.direction = refracted;
+        }
+
         return true;
     }
     
@@ -433,7 +481,7 @@ vec3 radiance(Ray ray) {
     vec3 col = vec3(1.0, 1.0, 1.0);
     
     for (int i = 0; i < MAXDEPTH; i++) {
-        if (intersectScene(ray, 0.001, MAXFLOAT, rec)) {
+        if (traverseOctree(ray, 0.001, MAXFLOAT, rec)) {
             Ray wi;
             vec3 attenuation;
             

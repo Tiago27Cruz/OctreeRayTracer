@@ -48,6 +48,7 @@ layout(std430, binding = 6) buffer ObjectIndicesBuffer {
     int objectIndices[];
 };
 
+uniform int useOctree;
 uniform int octreeNodeCount;
 uniform int sphereCount;
 
@@ -257,7 +258,7 @@ bool rayBoxIntersection(Ray ray, vec3 boxMin, vec3 boxMax, out float tmin, out f
 }
 
 bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
-    const int MAX_STACK = 100;
+    const int MAX_STACK = 200;
     int nodeStack[MAX_STACK];
     float tminStack[MAX_STACK];
     float tmaxStack[MAX_STACK];
@@ -310,7 +311,6 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
                 }
             }
         } 
-        // Interior node - push children to stack
         else {
             // Push children in front-to-back order (for early termination)
             // This is simplified - ideally you would sort based on ray direction
@@ -318,7 +318,6 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
                 int childIdx = childrenOffset + i;
                 if (childIdx >= octreeNodeCount) continue;
                 
-                // Push to stack (if stack isn't full)
                 if (stackPtr < MAX_STACK - 1) {
                     stackPtr++;
                     nodeStack[stackPtr] = childIdx;
@@ -331,6 +330,31 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     
     return hit_anything;
 }
+
+bool bruteForceIntersect(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
+    IntersectInfo temp_rec;
+    bool hit_anything = false;
+    float closest_so_far = t_max;
+    
+    for (int i = 0; i < sphereCount; i++) {
+        if (Sphere_hit(i, ray, t_min, closest_so_far, temp_rec)) {
+            hit_anything = true;
+            closest_so_far = temp_rec.t;
+            rec = temp_rec;
+        }
+    }
+    
+    return hit_anything;
+}
+
+bool intersectScene(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
+    if (useOctree == 1) {
+        return traverseOctree(ray, t_min, t_max, rec);
+    } else {
+        return bruteForceIntersect(ray, t_min, t_max, rec);
+    }
+}
+
 
 // Material functions for BSDF
 bool reflectVec(vec3 v, vec3 n, out vec3 reflected) {
@@ -481,7 +505,7 @@ vec3 radiance(Ray ray) {
     vec3 col = vec3(1.0, 1.0, 1.0);
     
     for (int i = 0; i < MAXDEPTH; i++) {
-        if (traverseOctree(ray, 0.001, MAXFLOAT, rec)) {
+        if (intersectScene(ray, 0.001, MAXFLOAT, rec)) {
             Ray wi;
             vec3 attenuation;
             

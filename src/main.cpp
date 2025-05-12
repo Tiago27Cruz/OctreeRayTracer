@@ -143,6 +143,7 @@ int main() {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, objectIndicesSSBO);
 
     shader.use();
+    shader.setInt("useOctree", 1);
     shader.setInt("octreeNodeCount", flattenedNodes.size());
     shader.setInt("sphereCount", spheres.size());
     glm::mat4 projection;

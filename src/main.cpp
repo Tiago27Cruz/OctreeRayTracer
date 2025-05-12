@@ -100,46 +100,38 @@ int main() {
     
     glGenBuffers(1, &spheresSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, spheresSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereCentersAndRadii.size() * sizeof(glm::vec4), 
-                sphereCentersAndRadii.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereCentersAndRadii.size() * sizeof(glm::vec4), sphereCentersAndRadii.data(), GL_STATIC_DRAW);  // Use .data() here
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, spheresSSBO);
 
     glGenBuffers(1, &sphereDataSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sphereDataSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereMaterialsAndAlbedo.size() * sizeof(glm::vec4), 
-                sphereMaterialsAndAlbedo.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereMaterialsAndAlbedo.size() * sizeof(glm::vec4), sphereMaterialsAndAlbedo.data(), GL_STATIC_DRAW);  // Use .data() here
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sphereDataSSBO);
 
     glGenBuffers(1, &sphereData2SSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, sphereData2SSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereFuzzAndRI.size() * sizeof(glm::vec4), 
-                sphereFuzzAndRI.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereFuzzAndRI.size() * sizeof(glm::vec4), sphereFuzzAndRI.data(), GL_STATIC_DRAW);  // Use .data() here
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sphereData2SSBO);
 
-    // Setup Octree - now 3 different SSBOs
     glGenBuffers(1, &octreeNodesSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, octreeNodesSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeMinAndChildren.size() * sizeof(glm::vec4), 
-                octreeMinAndChildren.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeMinAndChildren.size() * sizeof(glm::vec4), octreeMinAndChildren.data(), GL_STATIC_DRAW);  // Use .data() here
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, octreeNodesSSBO);
 
     glGenBuffers(1, &octreeNodes2SSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, octreeNodes2SSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeMaxAndObjects.size() * sizeof(glm::vec4), 
-                octreeMaxAndObjects.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeMaxAndObjects.size() * sizeof(glm::vec4), octreeMaxAndObjects.data(), GL_STATIC_DRAW);  // Use .data() here
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, octreeNodes2SSBO);
 
     glGenBuffers(1, &octreeCountsSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, octreeCountsSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeObjectCounts.size() * sizeof(int), 
-                octreeObjectCounts.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeObjectCounts.size() * sizeof(int), octreeObjectCounts.data(), GL_STATIC_DRAW);  // Use .data() here
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, octreeCountsSSBO);
 
     // Setup Object Indices buffer
     glGenBuffers(1, &objectIndicesSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, objectIndicesSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, objectIndices.size() * sizeof(int), 
-                objectIndices.data(), GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, objectIndices.size() * sizeof(int), objectIndices.data(), GL_STATIC_DRAW);
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, objectIndicesSSBO);
 
     shader.use();

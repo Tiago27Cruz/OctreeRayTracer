@@ -264,15 +264,15 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     float tmaxStack[MAX_STACK];
     int stackPtr = 0;
     
-    // Push root node to stack
-    nodeStack[0] = 0; // Root node index
+    // Place root on stack
+    nodeStack[0] = 0;
     tminStack[0] = t_min;
     tmaxStack[0] = t_max;
     
     bool hit_anything = false;
     float closest_so_far = t_max;
     
-    // Iterate until stack is empty
+    // If the stack is empty, it's finished
     while (stackPtr >= 0) {
         // Pop node from stack
         int nodeIdx = nodeStack[stackPtr];
@@ -355,13 +355,6 @@ bool intersectScene(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     }
 }
 
-
-// Material functions for BSDF
-bool reflectVec(vec3 v, vec3 n, out vec3 reflected) {
-    reflected = v - 2.0 * dot(v, n) * n;
-    return true;
-}
-
 bool refractVec(vec3 v, vec3 n, float ni_over_nt, out vec3 refracted) {
     vec3 uv = normalize(v);
     float dt = dot(uv, n);
@@ -390,14 +383,6 @@ bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 att
         return true;
     } 
     else if (materialType == METAL) {
-        //vec3 reflected;
-        //reflectVec(normalize(wo.direction), isectInfo.normal, reflected);
-        //
-        //wi.origin = isectInfo.point;
-        //wi.direction = normalize(reflected + isectInfo.fuzz * random_in_unit_sphere());
-        //attenuation = isectInfo.albedo;
-        //
-        //return dot(wi.direction, isectInfo.normal) > 0.0;
         float fuzz = isectInfo.fuzz;
 
         vec3 reflected = reflect(normalize(wo.direction), isectInfo.normal);
@@ -410,41 +395,6 @@ bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 att
         return (dot(wi.direction, isectInfo.normal) > 0.0f);
     }
     else if (materialType == DIELECTRIC) {
-        // Dielectric (transparent) material
-        /*vec3 outward_normal;
-        vec3 reflected;
-        reflectVec(wo.direction, isectInfo.normal, reflected);
-        
-        float ni_over_nt;
-        attenuation = vec3(1.0, 1.0, 1.0);
-        vec3 refracted;
-        float reflect_prob;
-        float cosine;
-        
-        if (dot(wo.direction, isectInfo.normal) > 0.0) {
-            outward_normal = -isectInfo.normal;
-            ni_over_nt = isectInfo.refractionIndex;
-            cosine = isectInfo.refractionIndex * dot(wo.direction, isectInfo.normal);
-        } else {
-            outward_normal = isectInfo.normal;
-            ni_over_nt = 1.0 / isectInfo.refractionIndex;
-            cosine = -dot(wo.direction, isectInfo.normal);
-        }
-        
-        if (refractVec(wo.direction, outward_normal, ni_over_nt, refracted))
-            reflect_prob = schlick(cosine, isectInfo.refractionIndex);
-        else
-            reflect_prob = 1.0;
-            
-        if (rand2D().x < reflect_prob) {
-            wi.origin = isectInfo.point;
-            wi.direction = normalize(reflected);
-        } else {
-            wi.origin = isectInfo.point;
-            wi.direction = normalize(refracted);
-        }
-        
-        return true;*/
         vec3 outward_normal;
         vec3 reflected = reflect(wo.direction, isectInfo.normal);
 

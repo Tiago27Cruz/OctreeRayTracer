@@ -67,7 +67,32 @@ int main() {
     Octree octree(8, 4); // Max depth 8, max 4 spheres per leaf
     octree.build(spheres);
 
+    std::vector<GPUOctreeNode> flattenedNodes = octree.flattenTree();
+    std::vector<int> objectIndices = octree.getObjectIndices();
+
+    GLuint spheresSSBO, octreeNodesSSBO, objectIndicesSSBO;
+
+    // Setup Sphere buffer
+    glGenBuffers(1, &spheresSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, spheresSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, spheres.size() * sizeof(Sphere), spheres.data(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, spheresSSBO);
+    
+    // Setup Octree Nodes buffer
+    glGenBuffers(1, &octreeNodesSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, octreeNodesSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, flattenedNodes.size() * sizeof(GPUOctreeNode), flattenedNodes.data(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, octreeNodesSSBO);
+    
+    // Setup Object Indices buffer
+    glGenBuffers(1, &objectIndicesSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, objectIndicesSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, objectIndices.size() * sizeof(int), objectIndices.data(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, objectIndicesSSBO);
+
     shader.use();
+    shader.setInt("octreeNodeCount", flattenedNodes.size());
+    shader.setInt("sphereCount", spheres.size());
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
     shader.setMat4("projection", projection); 
@@ -115,6 +140,9 @@ int main() {
         glfwPollEvents();
     }
     raytracingQuad.unbind();
+    glDeleteBuffers(1, &spheresSSBO);
+    glDeleteBuffers(1, &octreeNodesSSBO);
+    glDeleteBuffers(1, &objectIndicesSSBO);
     shader.deleteProgram();
 
     // Clean up and exit

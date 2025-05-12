@@ -112,3 +112,56 @@ bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, 
     return distSquared <= (sphere.radius * sphere.radius);
 }
 
+vector<GPUOctreeNode> Octree::flattenTree(){
+    std::vector<GPUOctreeNode> flattenedNodes;
+    std::vector<OctreeNode*> stack;
+    stack.push_back(root);
+
+    while (!stack.empty()) {
+        OctreeNode* node = stack.back();
+        stack.pop_back();
+
+        GPUOctreeNode gpuNode;
+        gpuNode.min = node->min;
+        gpuNode.max = node->max;
+        gpuNode.childrenOffset = node->childrenOffset;
+        gpuNode.objectsOffset = node->objectsOffset;
+        gpuNode.objectCount = node->objectCount;
+
+        flattenedNodes.push_back(gpuNode);
+
+        if (!node->isLeaf) {
+            for (int i = 0; i < 8; ++i) {
+                if (node->children[i]) {
+                    stack.push_back(node->children[i]);
+                }
+            }
+        }
+    }
+
+    return flattenedNodes;
+}
+
+vector<int> Octree::getObjectIndices() {
+    std::vector<int> objectIndices;
+    std::vector<OctreeNode*> stack;
+    stack.push_back(root);
+
+    while (!stack.empty()) {
+        OctreeNode* node = stack.back();
+        stack.pop_back();
+
+        if (node->isLeaf) {
+            objectIndices.insert(objectIndices.end(), node->objectIndices.begin(), node->objectIndices.end());
+        } else {
+            for (int i = 0; i < 8; ++i) {
+                if (node->children[i]) {
+                    stack.push_back(node->children[i]);
+                }
+            }
+        }
+    }
+
+    return objectIndices;
+}
+

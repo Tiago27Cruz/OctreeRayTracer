@@ -57,21 +57,18 @@ int main() {
 
     glEnable(GL_DEPTH_TEST);
 
-    // Build and compile shaders
     Shader shader("shaders/vertex_shader.glsl", "shaders/octree_fragment_shader.glsl");
 
-    // Create scene with spheres
     std::vector<Sphere> spheres = generateSpheres();
 
-    // Create and build octree
-    Octree octree(16, 1); // Max depth 8, max 4 spheres per leaf
+    Octree octree(8, 4); 
     octree.build(spheres);
 
     std::vector<GPUOctreeNode> flattenedNodes = octree.flattenTree();
     std::vector<int> objectIndices = octree.getObjectIndices();
 
     GLuint spheresSSBO, octreeNodesSSBO, objectIndicesSSBO, octreeNodes2SSBO, octreeCountsSSBO, sphereDataSSBO, sphereData2SSBO;
-    // Add these declarations before using the SSBOs
+
     std::vector<glm::vec4> sphereCentersAndRadii;      // center.xyz, radius
     std::vector<glm::vec4> sphereMaterialsAndAlbedo;   // materialType, albedo.xyz
     std::vector<glm::vec4> sphereFuzzAndRI;           // fuzz, refractionIndex, 0, 0
@@ -80,19 +77,16 @@ int main() {
     std::vector<glm::vec4> octreeMaxAndObjects;       // max.xyz, objectsOffset
     std::vector<int> octreeObjectCounts;              // objectCount
 
-    // After creating spheres and flattening the octree
-    // Fill sphere data arrays
     sphereCentersAndRadii.reserve(spheres.size());
     sphereMaterialsAndAlbedo.reserve(spheres.size());
     sphereFuzzAndRI.reserve(spheres.size());
 
     for (const Sphere& sphere : spheres) {
         sphereCentersAndRadii.push_back(glm::vec4(sphere.center, sphere.radius));
-        sphereMaterialsAndAlbedo.push_back(glm::vec4(sphere.materialType, sphere.albedo));
+        sphereMaterialsAndAlbedo.push_back(glm::vec4(float(sphere.materialType), sphere.albedo.x, sphere.albedo.y, sphere.albedo.z));
         sphereFuzzAndRI.push_back(glm::vec4(sphere.fuzz, sphere.refractionIndex, 0.0f, 0.0f));
     }
 
-    // Fill octree data arrays
     octreeMinAndChildren.reserve(flattenedNodes.size());
     octreeMaxAndObjects.reserve(flattenedNodes.size());
     octreeObjectCounts.reserve(flattenedNodes.size());
@@ -103,7 +97,7 @@ int main() {
         octreeObjectCounts.push_back(node.objectCount);
     }
 
-    // Setup Sphere buffer - now 3 different SSBOs
+    
     glGenBuffers(1, &spheresSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, spheresSSBO);
     glBufferData(GL_SHADER_STORAGE_BUFFER, sphereCentersAndRadii.size() * sizeof(glm::vec4), 
@@ -201,6 +195,10 @@ int main() {
     glDeleteBuffers(1, &spheresSSBO);
     glDeleteBuffers(1, &octreeNodesSSBO);
     glDeleteBuffers(1, &objectIndicesSSBO);
+    glDeleteBuffers(1, &sphereDataSSBO);
+    glDeleteBuffers(1, &sphereData2SSBO);
+    glDeleteBuffers(1, &octreeNodes2SSBO);
+    glDeleteBuffers(1, &octreeCountsSSBO);
     shader.deleteProgram();
 
     // Clean up and exit

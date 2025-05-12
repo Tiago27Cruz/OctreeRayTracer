@@ -51,5 +51,9 @@ class Octree {
     private:
         OctreeNode* root;
         int maxDepth;
-        int maxTrianglesPerNode;
+        int maxSpheresPerNode;
+
+        void subdivideNode(OctreeNode* node, const vector<Sphere>& spheres, int depth);
+        bool sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, const glm::vec3& boxMax);
+        
 };

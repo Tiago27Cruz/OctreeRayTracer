@@ -1,3 +1,6 @@
+#ifndef SPHERE_H
+#define SPHERE_H
+
 #include <glm/glm.hpp>
 using namespace glm;
 
@@ -18,3 +21,5 @@ class Sphere {
             : center(center), radius(radius), albedo(albedo), materialType(materialType), fuzz(fuzz), refractionIndex(refractionIndex) {}
 
 };
+
+#endif // SPHERE_H

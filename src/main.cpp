@@ -58,7 +58,7 @@ int main() {
     glEnable(GL_DEPTH_TEST);
 
     // Build and compile shaders
-    Shader shader("shaders/vertex_shader.glsl", "shaders/fragment_shader.glsl");
+    Shader shader("shaders/vertex_shader.glsl", "shaders/octree_fragment_shader.glsl");
 
     // Create scene with spheres
     std::vector<Sphere> spheres = generateSpheres();
@@ -70,25 +70,83 @@ int main() {
     std::vector<GPUOctreeNode> flattenedNodes = octree.flattenTree();
     std::vector<int> objectIndices = octree.getObjectIndices();
 
-    GLuint spheresSSBO, octreeNodesSSBO, objectIndicesSSBO;
+    GLuint spheresSSBO, octreeNodesSSBO, objectIndicesSSBO, octreeNodes2SSBO, octreeCountsSSBO, sphereDataSSBO, sphereData2SSBO;
+    // Add these declarations before using the SSBOs
+    std::vector<glm::vec4> sphereCentersAndRadii;      // center.xyz, radius
+    std::vector<glm::vec4> sphereMaterialsAndAlbedo;   // materialType, albedo.xyz
+    std::vector<glm::vec4> sphereFuzzAndRI;           // fuzz, refractionIndex, 0, 0
 
-    // Setup Sphere buffer
+    std::vector<glm::vec4> octreeMinAndChildren;      // min.xyz, childrenOffset
+    std::vector<glm::vec4> octreeMaxAndObjects;       // max.xyz, objectsOffset
+    std::vector<int> octreeObjectCounts;              // objectCount
+
+    // After creating spheres and flattening the octree
+    // Fill sphere data arrays
+    sphereCentersAndRadii.reserve(spheres.size());
+    sphereMaterialsAndAlbedo.reserve(spheres.size());
+    sphereFuzzAndRI.reserve(spheres.size());
+
+    for (const Sphere& sphere : spheres) {
+        sphereCentersAndRadii.push_back(glm::vec4(sphere.center, sphere.radius));
+        sphereMaterialsAndAlbedo.push_back(glm::vec4(sphere.materialType, sphere.albedo));
+        sphereFuzzAndRI.push_back(glm::vec4(sphere.fuzz, sphere.refractionIndex, 0.0f, 0.0f));
+    }
+
+    // Fill octree data arrays
+    octreeMinAndChildren.reserve(flattenedNodes.size());
+    octreeMaxAndObjects.reserve(flattenedNodes.size());
+    octreeObjectCounts.reserve(flattenedNodes.size());
+
+    for (const GPUOctreeNode& node : flattenedNodes) {
+        octreeMinAndChildren.push_back(glm::vec4(node.min, node.childrenOffset));
+        octreeMaxAndObjects.push_back(glm::vec4(node.max, node.objectsOffset));
+        octreeObjectCounts.push_back(node.objectCount);
+    }
+
+    // Setup Sphere buffer - now 3 different SSBOs
     glGenBuffers(1, &spheresSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, spheresSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, spheres.size() * sizeof(Sphere), spheres.data(), GL_STATIC_DRAW);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereCentersAndRadii.size() * sizeof(glm::vec4), 
+                sphereCentersAndRadii.data(), GL_STATIC_DRAW);  // Use .data() here
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 0, spheresSSBO);
-    
-    // Setup Octree Nodes buffer
+
+    glGenBuffers(1, &sphereDataSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sphereDataSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereMaterialsAndAlbedo.size() * sizeof(glm::vec4), 
+                sphereMaterialsAndAlbedo.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, sphereDataSSBO);
+
+    glGenBuffers(1, &sphereData2SSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, sphereData2SSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, sphereFuzzAndRI.size() * sizeof(glm::vec4), 
+                sphereFuzzAndRI.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, sphereData2SSBO);
+
+    // Setup Octree - now 3 different SSBOs
     glGenBuffers(1, &octreeNodesSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, octreeNodesSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, flattenedNodes.size() * sizeof(GPUOctreeNode), flattenedNodes.data(), GL_STATIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 1, octreeNodesSSBO);
-    
+    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeMinAndChildren.size() * sizeof(glm::vec4), 
+                octreeMinAndChildren.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 3, octreeNodesSSBO);
+
+    glGenBuffers(1, &octreeNodes2SSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, octreeNodes2SSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeMaxAndObjects.size() * sizeof(glm::vec4), 
+                octreeMaxAndObjects.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 4, octreeNodes2SSBO);
+
+    glGenBuffers(1, &octreeCountsSSBO);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, octreeCountsSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, octreeObjectCounts.size() * sizeof(int), 
+                octreeObjectCounts.data(), GL_STATIC_DRAW);  // Use .data() here
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 5, octreeCountsSSBO);
+
     // Setup Object Indices buffer
     glGenBuffers(1, &objectIndicesSSBO);
     glBindBuffer(GL_SHADER_STORAGE_BUFFER, objectIndicesSSBO);
-    glBufferData(GL_SHADER_STORAGE_BUFFER, objectIndices.size() * sizeof(int), objectIndices.data(), GL_STATIC_DRAW);
-    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 2, objectIndicesSSBO);
+    glBufferData(GL_SHADER_STORAGE_BUFFER, objectIndices.size() * sizeof(int), 
+                objectIndices.data(), GL_STATIC_DRAW);
+    glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, objectIndicesSSBO);
 
     shader.use();
     shader.setInt("octreeNodeCount", flattenedNodes.size());
@@ -163,7 +221,7 @@ GLFWwindow* startGLFW() {
     }
 
     // Set GLFW window hints for OpenGL version
-    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 3);
+    glfwWindowHint(GLFW_CONTEXT_VERSION_MAJOR, 4);
     glfwWindowHint(GLFW_CONTEXT_VERSION_MINOR, 3);
     glfwWindowHint(GLFW_OPENGL_PROFILE, GLFW_OPENGL_CORE_PROFILE);
 
@@ -263,7 +321,7 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 vector<Sphere> generateSpheres() {
     std::vector<Sphere> spheres;
 
-    spheres.push_back(Sphere(glm::vec3( 0.000000, -1000.000000, 0.000000), 1000.000000, 0, glm::vec3( 0.500000, 0.500000, 0.500000), 1.000000, 1.000000));
+    spheres.push_back(Sphere(vec3( 0.000000, -1000.000000, 0.000000), 1000.000000, 0, vec3( 0.500000, 0.500000, 0.500000), 1.000000, 1.000000));
     spheres.push_back(Sphere(vec3( -7.995381, 0.200000, -7.478668), 0.200000, 0, vec3( 0.380012, 0.506085, 0.762437), 1.000000, 1.000000));
     spheres.push_back(Sphere(vec3( -7.696819, 0.200000, -5.468978), 0.200000, 0, vec3( 0.596282, 0.140784, 0.017972), 1.000000, 1.000000));
     spheres.push_back(Sphere(vec3( -7.824804, 0.200000, -3.120637), 0.200000, 0, vec3( 0.288507, 0.465652, 0.665070), 1.000000, 1.000000));

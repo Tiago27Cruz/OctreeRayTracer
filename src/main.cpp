@@ -63,9 +63,10 @@ int main() {
 
     Octree octree(8, 4); 
     octree.build(spheres);
-
-    std::vector<GPUOctreeNode> flattenedNodes = octree.flattenTree();
+    
     std::vector<int> objectIndices = octree.getObjectIndices();
+    std::vector<GPUOctreeNode> flattenedNodes = octree.flattenTree();
+    
 
     GLuint spheresSSBO, octreeNodesSSBO, objectIndicesSSBO, octreeNodes2SSBO, octreeCountsSSBO, sphereDataSSBO, sphereData2SSBO;
 

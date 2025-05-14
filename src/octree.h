@@ -19,9 +19,8 @@ class OctreeNode {
         bool isLeaf;
         glm::vec3 min; // Bounding box min corner
         glm::vec3 max; // Bounding box max corner
-        std::vector<int> objectIndices; // Indices of objects in this node
 
-        // For flat array GPU representation
+        std::vector<int> objectIndices; // Indices of the spheres in this node
         int childrenOffset; // Offset to children in flat array (-1 if leaf)
         int objectsOffset; // Offset to object indices array (-1 if not leaf)
         int objectCount; // Number of objects in this node

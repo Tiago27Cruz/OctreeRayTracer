@@ -27,12 +27,12 @@ void Octree::build(const std::vector<Sphere>& spheres) {
         return;
     }
 
-    glm::vec3 min = spheres[0].center - glm::vec3(spheres[0].radius);
-    glm::vec3 max = spheres[0].center + glm::vec3(spheres[0].radius);
+    glm::vec3 min = spheres[0].center - glm::vec3(spheres[0].radius, spheres[0].radius, spheres[0].radius);
+    glm::vec3 max = spheres[0].center + glm::vec3(spheres[0].radius, spheres[0].radius, spheres[0].radius);
 
     for (const Sphere& sphere : spheres) {
-        glm::vec3 sphereMin = sphere.center - glm::vec3(sphere.radius);
-        glm::vec3 sphereMax = sphere.center + glm::vec3(sphere.radius);
+        glm::vec3 sphereMin = sphere.center - glm::vec3(sphere.radius, spheres[0].radius, spheres[0].radius);
+        glm::vec3 sphereMax = sphere.center + glm::vec3(sphere.radius, spheres[0].radius, spheres[0].radius);
 
         min = glm::min(min, sphereMin);
         max = glm::max(max, sphereMax);
@@ -41,18 +41,16 @@ void Octree::build(const std::vector<Sphere>& spheres) {
     // Root OctreeNode contains everything
     root = new OctreeNode(min, max);
 
-    // Initialize the root node with the bounding box of all spheres
+    // since it contains everything, we add all indices to the root node
     for (int i = 0; i < spheres.size(); ++i) {
-        root->objectIndices.push_back(i);
+        root->objectIndices.push_back(i); 
     }
     root->objectCount = spheres.size();
 }
 
 void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres, int depth) {
     // Stop if we're at max depth or we have few enough spheres
-    if (depth >= maxDepth || node->objectIndices.size() <= static_cast<size_t>(maxSpheresPerNode)) {
-        return;
-    }
+    if (depth >= maxDepth || node->objectIndices.size() <= static_cast<size_t>(maxSpheresPerNode)) return;
     
     // Calculate midpoint of current node
     glm::vec3 mid = (node->min + node->max) * 0.5f;
@@ -87,7 +85,7 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
         }
     }
     
-    // Clear parent's object list to save memory
+    // clear parent's indices to save space
     node->objectIndices.clear();
     
     // Recursively subdivide children
@@ -112,9 +110,18 @@ bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, 
     return distSquared <= (sphere.radius * sphere.radius);
 }
 
+/**
+ * @brief Flattens the octree into a vector of GPUOctreeNode structures.
+ * This function traverses the octree and stores the min, max, childrenOffset,
+ * objectsOffset, and objectCount for each node in a flat array format so that
+ * it can be passed and used in the fragment shader.
+ * 
+ * Works like a DFS
+ */
 vector<GPUOctreeNode> Octree::flattenTree(){
     std::vector<GPUOctreeNode> flattenedNodes;
     std::vector<OctreeNode*> stack;
+
     stack.push_back(root);
 
     while (!stack.empty()) {
@@ -127,7 +134,6 @@ vector<GPUOctreeNode> Octree::flattenTree(){
         gpuNode.childrenOffset = node->childrenOffset;
         gpuNode.objectsOffset = node->objectsOffset;
         gpuNode.objectCount = node->objectCount;
-
         flattenedNodes.push_back(gpuNode);
 
         if (!node->isLeaf) {
@@ -138,30 +144,42 @@ vector<GPUOctreeNode> Octree::flattenTree(){
             }
         }
     }
-
     return flattenedNodes;
 }
 
+// TODO: Maybe could be joined with flattenTree
 vector<int> Octree::getObjectIndices() {
     std::vector<int> objectIndices;
-    std::vector<OctreeNode*> stack;
-    stack.push_back(root);
-
-    while (!stack.empty()) {
-        OctreeNode* node = stack.back();
-        stack.pop_back();
-
-        if (node->isLeaf) {
-            objectIndices.insert(objectIndices.end(), node->objectIndices.begin(), node->objectIndices.end());
-        } else {
+    std::vector<OctreeNode*> nodeStack;
+    nodeStack.push_back(root);
+    
+    // First: collect all nodes in the order they'll be processed
+    std::vector<OctreeNode*> allNodes;
+    while (!nodeStack.empty()) {
+        OctreeNode* node = nodeStack.back();
+        nodeStack.pop_back();
+        
+        allNodes.push_back(node);
+        
+        if (!node->isLeaf) {
             for (int i = 0; i < 8; ++i) {
                 if (node->children[i]) {
-                    stack.push_back(node->children[i]);
+                    nodeStack.push_back(node->children[i]);
                 }
             }
         }
     }
-
+    
+    // Second: set offsets and collect indices
+    int currentOffset = 0;
+    for (OctreeNode* node : allNodes) {
+        if (node->isLeaf && !node->objectIndices.empty()) {
+            node->objectsOffset = currentOffset;
+            objectIndices.insert(objectIndices.end(), node->objectIndices.begin(), node->objectIndices.end()); // adds all indices to the end of the vector
+            currentOffset += node->objectIndices.size();
+        }
+    }
+    
     return objectIndices;
 }
 

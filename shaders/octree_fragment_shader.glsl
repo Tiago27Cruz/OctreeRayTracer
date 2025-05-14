@@ -242,7 +242,7 @@ bool Sphere_hit(int sphereIdx, Ray ray, float t_min, float t_max, inout Intersec
     return false;
 }
 
-// Ray-box intersection for octree traversal
+// Ray-box intersection for octree
 bool rayBoxIntersection(Ray ray, vec3 boxMin, vec3 boxMax, out float tmin, out float tmax) {
     vec3 invDir = 1.0 / ray.direction;
     vec3 tbot = invDir * (boxMin - ray.origin);
@@ -262,9 +262,10 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     int nodeStack[MAX_STACK];
     float tminStack[MAX_STACK];
     float tmaxStack[MAX_STACK];
-    int stackPtr = 0;
     
-    // Place root on stack
+    
+    // represents the root
+    int stackPtr = 0;
     nodeStack[0] = 0;
     tminStack[0] = t_min;
     tmaxStack[0] = t_max;
@@ -274,32 +275,30 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     
     // If the stack is empty, it's finished
     while (stackPtr >= 0) {
-        // Pop node from stack
         int nodeIdx = nodeStack[stackPtr];
         float node_tmin = tminStack[stackPtr];
         float node_tmax = tmaxStack[stackPtr];
         stackPtr--;
         
-        // Skip if this node can't be closer than what we've already found
+        // if we found already a closer node, continue
         if (node_tmin > closest_so_far) continue;
         
-        // Get node data
+        // get data
         vec3 nodeMin = octreeNodes[nodeIdx].xyz;
         int childrenOffset = int(octreeNodes[nodeIdx].w);
         vec3 nodeMax = octreeNodes2[nodeIdx].xyz;
         int objectsOffset = int(octreeNodes2[nodeIdx].w);
         int objectCount = octreeNodeCounts[nodeIdx];
         
-        // Check if ray intersects this node
+        // Test for intersection
         float boxTMin, boxTMax;
-        if (!rayBoxIntersection(ray, nodeMin, nodeMax, boxTMin, boxTMax) || 
-            boxTMax < node_tmin || boxTMin > node_tmax) {
-            continue; // No intersection, skip this node
+        if (!rayBoxIntersection(ray, nodeMin, nodeMax, boxTMin, boxTMax) || boxTMax < node_tmin || boxTMin > node_tmax) {
+            continue; // no intersection
         }
         
-        // This is a leaf node with objects
+        // leaf node with objects
         if (childrenOffset == -1) {
-            // Test all objects in this node
+
             for (int i = 0; i < objectCount; i++) {
                 int sphereIdx = objectIndices[objectsOffset + i];
                 
@@ -313,7 +312,7 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
         } 
         else {
             // Push children in front-to-back order (for early termination)
-            // This is simplified - ideally you would sort based on ray direction
+            // TODO: maybe sort based on ray direction
             for (int i = 0; i < 8; i++) {
                 int childIdx = childrenOffset + i;
                 if (childIdx >= octreeNodeCount) continue;

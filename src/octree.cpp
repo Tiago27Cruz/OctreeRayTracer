@@ -56,23 +56,56 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
         std::cout << "Stopping subdivision at depth " << depth << " with " << node->objectIndices.size() << " objects." << std::endl;
         return;
     }
-    
-    // Calculate midpoint of current node
+
+
     glm::vec3 mid = (node->min + node->max) * 0.5f;
+    std::cout << "Midpoint: " << mid.x << ", " << mid.y << ", " << mid.z << std::endl;
     
-    // Mark node as internal (not a leaf)
+
     node->isLeaf = false;
-    
-    // Create 8 children
     for (int i = 0; i < 8; ++i) {
-        // Calculate child bounds based on position
+
         glm::vec3 childMin = node->min;
         glm::vec3 childMax = node->max;
         
-        // Adjust bounds based on octant position
-        if (i & 1) childMin.x = mid.x; else childMax.x = mid.x;
-        if (i & 2) childMin.y = mid.y; else childMax.y = mid.y;
-        if (i & 4) childMin.z = mid.z; else childMax.z = mid.z;
+        switch(i) {
+            case 0: // bottom-left-front
+                childMax = mid;
+                break;
+            case 1: // bottom-right-front
+                childMin.x = mid.x;
+                childMax.y = mid.y;
+                childMax.z = mid.z;
+                break;
+            case 2: // top-left-front
+                childMax.x = mid.x;
+                childMin.y = mid.y;
+                childMax.z = mid.z;
+                break;
+            case 3: // top-right-front
+                childMin.x = mid.x;
+                childMin.y = mid.y;
+                childMax.z = mid.z;
+                break;
+            case 4: // bottom-left-back
+                childMax.x = mid.x;
+                childMax.y = mid.y;
+                childMin.z = mid.z;
+                break;
+            case 5: // bottom-right-back
+                childMin.x = mid.x;
+                childMax.y = mid.y;
+                childMin.z = mid.z;
+                break;
+            case 6: // top-left-back
+                childMax.x = mid.x;
+                childMin.y = mid.y;
+                childMin.z = mid.z;
+                break;
+            case 7: // top-right-back
+                childMin = mid;
+                break;
+        }
         
         node->children[i] = new OctreeNode(childMin, childMax);
     }

@@ -296,7 +296,7 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
             continue; // no intersection
         }
         
-        // leaf node with objects
+        // leaf node
         if (childrenOffset == -1) {
 
             for (int i = 0; i < objectCount; i++) {
@@ -311,7 +311,7 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
             }
         } 
         else {
-            // Push children in front-to-back order (for early termination)
+            // Push children in front-to-back order
             // TODO: maybe sort based on ray direction
             for (int i = 0; i < 8; i++) {
                 int childIdx = childrenOffset + i;

@@ -1,5 +1,6 @@
 #include "octree.h"
 #include <glm/glm.hpp>
+#include <map>
 
 OctreeNode::OctreeNode(const glm::vec3& min, const glm::vec3& max)
     : min(min), max(max), isLeaf(true), childrenOffset(-1), objectsOffset(-1), objectCount(0) {
@@ -118,24 +119,32 @@ bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, 
  * 
  * Works like a DFS
  */
-vector<GPUOctreeNode> Octree::flattenTree(){
+vector<GPUOctreeNode> Octree::flattenTree() {
     std::vector<GPUOctreeNode> flattenedNodes;
     std::vector<OctreeNode*> stack;
+    std::map<OctreeNode*, int> nodeToIndex;
+    std::vector<OctreeNode*> allNodes;
 
+    // Add all nodes to the flattened array
     stack.push_back(root);
-
     while (!stack.empty()) {
         OctreeNode* node = stack.back();
         stack.pop_back();
 
+
+        allNodes.push_back(node);
+        nodeToIndex[node] = flattenedNodes.size();
+
+
         GPUOctreeNode gpuNode;
         gpuNode.min = node->min;
         gpuNode.max = node->max;
-        gpuNode.childrenOffset = node->childrenOffset;
+        gpuNode.childrenOffset = -1;
         gpuNode.objectsOffset = node->objectsOffset;
         gpuNode.objectCount = node->objectCount;
         flattenedNodes.push_back(gpuNode);
 
+        // Add children to the stack
         if (!node->isLeaf) {
             for (int i = 0; i < 8; ++i) {
                 if (node->children[i]) {
@@ -144,6 +153,15 @@ vector<GPUOctreeNode> Octree::flattenTree(){
             }
         }
     }
+
+    // set children offsets
+    for (size_t i = 0; i < flattenedNodes.size(); i++) {
+        OctreeNode* node = allNodes[i]; 
+        if (!node->isLeaf) {
+            flattenedNodes[i].childrenOffset = nodeToIndex[node->children[0]];
+        }
+    }
+
     return flattenedNodes;
 }
 

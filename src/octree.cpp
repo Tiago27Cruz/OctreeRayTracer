@@ -32,14 +32,13 @@ void Octree::build(const std::vector<Sphere>& spheres) {
     glm::vec3 max = spheres[0].center + glm::vec3(spheres[0].radius, spheres[0].radius, spheres[0].radius);
 
     for (const Sphere& sphere : spheres) {
-        glm::vec3 sphereMin = sphere.center - glm::vec3(sphere.radius, spheres[0].radius, spheres[0].radius);
-        glm::vec3 sphereMax = sphere.center + glm::vec3(sphere.radius, spheres[0].radius, spheres[0].radius);
+        glm::vec3 sphereMin = sphere.center - glm::vec3(sphere.radius, sphere.radius, sphere.radius);
+        glm::vec3 sphereMax = sphere.center + glm::vec3(sphere.radius, sphere.radius, sphere.radius);
 
         min = glm::min(min, sphereMin);
         max = glm::max(max, sphereMax);
     }
     
-    // Root OctreeNode contains everything
     root = new OctreeNode(min, max);
 
     // since it contains everything, we add all indices to the root node
@@ -47,11 +46,16 @@ void Octree::build(const std::vector<Sphere>& spheres) {
         root->objectIndices.push_back(i); 
     }
     root->objectCount = spheres.size();
+
+    subdivideNode(root, spheres, 0);
 }
 
 void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres, int depth) {
-    // Stop if we're at max depth or we have few enough spheres
-    if (depth >= maxDepth || node->objectIndices.size() <= static_cast<size_t>(maxSpheresPerNode)) return;
+    // Stop if we're at max depth
+    if (depth >= maxDepth || node->objectIndices.size() <= static_cast<size_t>(maxSpheresPerNode)) {
+        std::cout << "Stopping subdivision at depth " << depth << " with " << node->objectIndices.size() << " objects." << std::endl;
+        return;
+    }
     
     // Calculate midpoint of current node
     glm::vec3 mid = (node->min + node->max) * 0.5f;
@@ -88,8 +92,9 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
     
     // clear parent's indices to save space
     node->objectIndices.clear();
+    node->objectCount = 0;
     
-    // Recursively subdivide children
+
     for (int i = 0; i < 8; ++i) {
         if (!node->children[i]->objectIndices.empty()) {
             subdivideNode(node->children[i], spheres, depth + 1);

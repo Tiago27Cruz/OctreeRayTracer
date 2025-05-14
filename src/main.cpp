@@ -61,9 +61,9 @@ int main() {
 
     std::vector<Sphere> spheres = generateSpheres();
 
-    Octree octree(8, 4); 
+    Octree octree(16, 8); 
     octree.build(spheres);
-    
+
     std::vector<int> objectIndices = octree.getObjectIndices();
     std::vector<GPUOctreeNode> flattenedNodes = octree.flattenTree();
     

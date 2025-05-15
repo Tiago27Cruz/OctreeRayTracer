@@ -32,3 +32,4 @@ This way, we ease the load of work on the GPU, making our app more efficient.
 
 - https://www.cs.swarthmore.edu/~jcarste1/pdfs/octree.pdf
 - http://wscg.zcu.cz/wscg2000/Papers_2000/X31.pdf
+- https://www.geeksforgeeks.org/octree-insertion-and-searching/

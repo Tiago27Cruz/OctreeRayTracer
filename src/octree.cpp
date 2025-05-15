@@ -18,6 +18,7 @@ OctreeNode::~OctreeNode() {
 Octree::Octree(int maxDepth, int maxSpheresPerNode)
     : root(nullptr), maxDepth(maxDepth), maxSpheresPerNode(maxSpheresPerNode) {}
 
+//TODO: Improve
 Octree::~Octree() {
     delete root;
 }
@@ -25,7 +26,6 @@ Octree::~Octree() {
 void Octree::build(const std::vector<Sphere>& spheres) {
     if (spheres.empty()) {
         throw std::invalid_argument("Sphere list is empty");
-        return;
     }
 
     glm::vec3 min = spheres[0].center - glm::vec3(spheres[0].radius, spheres[0].radius, spheres[0].radius);
@@ -41,19 +41,116 @@ void Octree::build(const std::vector<Sphere>& spheres) {
     
     root = new OctreeNode(min, max);
 
+    // DEBUG
+    cout << "Root Node Min: " << root->min.x << ", " << root->min.y << ", " << root->min.z << std::endl; // Min: (-13, -13, -13)
+    cout << "Root Node Max: " << root->max.x << ", " << root->max.y << ", " << root->max.z << std::endl; // Max: (13, 13, 13)
+
     // since it contains everything, we add all indices to the root node
     for (int i = 0; i < spheres.size(); ++i) {
         root->objectIndices.push_back(i); 
     }
     root->objectCount = spheres.size();
+    cout << "Root Node Object Count: " << root->objectCount << std::endl; // DEBUG: Object Count: 3
 
     subdivideNode(root, spheres, 0);
+}
+
+OctreeNode* createSubnodes(int index, OctreeNode* node, const glm::vec3& mid) {
+    glm::vec3 childMin, childMax;
+        
+    switch (index){
+        case TopLeftFront: { // example: (-1, 0, 0) to (0, 1, 1) 
+            childMin.x = node->min.x;
+            childMin.y = mid.y;
+            childMin.z = mid.z;
+            
+            childMax.x = mid.x;
+            childMax.y = node->max.y;
+            childMax.z = node->max.z;
+            break;
+        }
+        case TopRightFront: { // example: (0, 0, 0) to (1, 1, 1)
+            childMin.x = mid.x;
+            childMin.y = mid.y;
+            childMin.z = mid.z;
+            
+            childMax.x = node->max.x;
+            childMax.y = node->max.y;
+            childMax.z = node->max.z;
+            break;
+        }
+        case BottomRightFront: { // example: (0, 0, -1) to (1, 1, 0)
+            childMin.x = mid.x;
+            childMin.y = mid.y;
+            childMin.z = node->min.z;
+
+            childMax.x = node->max.x;
+            childMax.y = node->max.y;
+            childMax.z = mid.z;
+            break;
+        }
+        case BottomLeftFront: { // example: (-1, 0, -1) to (0, 1, 0)
+            childMin.x = node->min.x;
+            childMin.y = mid.y;
+            childMin.z = node->min.z;
+
+            childMax.x = mid.x;
+            childMax.y = node->max.y;
+            childMax.z = mid.z;
+            break;
+        }
+        case TopLeftBack: { // example: (-1, -1, 0) to (0, 0, 1)
+            childMin.x = node->min.x;
+            childMin.y = node->min.y;
+            childMin.z = mid.z;
+
+            childMax.x = mid.x;
+            childMax.y = mid.y;
+            childMax.z = node->max.z;
+            break;
+        }
+        case TopRightBack: { // example: (0, -1, 0) to (1, 0, 1)
+            childMin.x = mid.x;
+            childMin.y = node->min.y;
+            childMin.z = mid.z;
+
+            childMax.x = node->max.x;
+            childMax.y = mid.y;
+            childMax.z = node->max.z;
+            break;
+        }
+        case BottomRightBack: { // example: (0, -1, -1) to (1, 0, 0)
+            childMin.x = mid.x;
+            childMin.y = node->min.y;
+            childMin.z = node->min.z;
+
+            childMax.x = node->max.x;
+            childMax.y = mid.y;
+            childMax.z = mid.z;
+            break;
+        }
+        case BottomLeftBack: { // example: (-1, -1, -1) to (0, 0, 0)
+            childMin.x = node->min.x;
+            childMin.y = node->min.y;
+            childMin.z = node->min.z;
+
+            childMax.x = mid.x;
+            childMax.y = mid.y;
+            childMax.z = mid.z;
+            break;
+        }
+        default:
+            throw std::invalid_argument("Invalid octant index while subdividing node with index = " + std::to_string(index));
+            break;
+    }
+
+    return new OctreeNode(childMin, childMax);
 }
 
 void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres, int depth) {
     // Stop if we're at max depth
     if (depth >= maxDepth || node->objectIndices.size() <= static_cast<size_t>(maxSpheresPerNode)) {
-        std::cout << "Stopping subdivision at depth " << depth << " with " << node->objectIndices.size() << " objects." << std::endl;
+        //std::cout << "Stopping subdivision at depth " << depth << " with " << node->objectIndices.size() << " objects." << std::endl;
         return;
     }
 
@@ -64,59 +161,16 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
 
     node->isLeaf = false;
     for (int i = 0; i < 8; ++i) {
-
-        glm::vec3 childMin = node->min;
-        glm::vec3 childMax = node->max;
-        
-        switch(i) {
-            case 0: // bottom-left-front
-                childMax = mid;
-                break;
-            case 1: // bottom-right-front
-                childMin.x = mid.x;
-                childMax.y = mid.y;
-                childMax.z = mid.z;
-                break;
-            case 2: // top-left-front
-                childMax.x = mid.x;
-                childMin.y = mid.y;
-                childMax.z = mid.z;
-                break;
-            case 3: // top-right-front
-                childMin.x = mid.x;
-                childMin.y = mid.y;
-                childMax.z = mid.z;
-                break;
-            case 4: // bottom-left-back
-                childMax.x = mid.x;
-                childMax.y = mid.y;
-                childMin.z = mid.z;
-                break;
-            case 5: // bottom-right-back
-                childMin.x = mid.x;
-                childMax.y = mid.y;
-                childMin.z = mid.z;
-                break;
-            case 6: // top-left-back
-                childMax.x = mid.x;
-                childMin.y = mid.y;
-                childMin.z = mid.z;
-                break;
-            case 7: // top-right-back
-                childMin = mid;
-                break;
-        }
-        
-        node->children[i] = new OctreeNode(childMin, childMax);
+        node->children[i] = createSubnodes(i, node, mid);
     }
     
     // Distribute spheres to child nodes
     for (int sphereIdx : node->objectIndices) {
         const Sphere& sphere = spheres[sphereIdx];
         
-        // Add sphere to each intersecting child
         for (int i = 0; i < 8; ++i) {
             if (sphereIntersectsBox(sphere, node->children[i]->min, node->children[i]->max)) {
+                cout << "Sphere " << sphereIdx << " intersects child node " << i << std::endl;
                 node->children[i]->objectIndices.push_back(sphereIdx);
                 node->children[i]->objectCount++;
             }
@@ -136,7 +190,6 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
 }
 
 bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, const glm::vec3& boxMax) {
-    // Calculate closest point on box to sphere center
     glm::vec3 closest;
     
     // For each axis, find closest point on box boundary to sphere center
@@ -145,7 +198,7 @@ bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, 
     }
     
     // Check if closest point is within sphere radius
-    float distSquared = glm::length(closest - sphere.center);
+    float distSquared = glm::dot(closest - sphere.center, closest - sphere.center);
     return distSquared <= (sphere.radius * sphere.radius);
 }
 

@@ -1,6 +1,7 @@
 #include "octree.h"
 #include <glm/glm.hpp>
 #include <map>
+#include <queue>
 
 OctreeNode::OctreeNode(const glm::vec3& min, const glm::vec3& max)
     : min(min), max(max), isLeaf(true), childrenOffset(-1), objectsOffset(-1), objectCount(0) {
@@ -18,9 +19,28 @@ OctreeNode::~OctreeNode() {
 Octree::Octree(int maxDepth, int maxSpheresPerNode)
     : root(nullptr), maxDepth(maxDepth), maxSpheresPerNode(maxSpheresPerNode) {}
 
-//TODO: Improve
 Octree::~Octree() {
-    delete root;
+    cleanup();
+}
+
+void Octree::cleanup() {
+    if (root) {
+        cleanupNode(root);
+        delete root;
+        root = nullptr;
+    }
+}
+
+void Octree::cleanupNode(OctreeNode* node) {
+    if (!node->isLeaf) {
+        for (int i = 0; i < 8; ++i) {
+            if (node->children[i]) {
+                cleanupNode(node->children[i]);
+                delete node->children[i];
+                node->children[i] = nullptr;
+            }
+        }
+    }
 }
 
 void Octree::build(const std::vector<Sphere>& spheres) {
@@ -292,3 +312,44 @@ vector<int> Octree::getObjectIndices() {
     return objectIndices;
 }
 
+void Octree::printFlattenedTree() {
+    std::vector<GPUOctreeNode> flattenedNodes = flattenTree();
+    int i = 0;
+    for (const GPUOctreeNode& node : flattenedNodes) {
+        std::cout << "Node " << i++ << ":" << std::endl;
+        std::cout << "Node Min: " << node.min.x << ", " << node.min.y << ", " << node.min.z << std::endl;
+        std::cout << "Node Max: " << node.max.x << ", " << node.max.y << ", " << node.max.z << std::endl;
+        std::cout << "Children Offset: " << node.childrenOffset << std::endl;
+        std::cout << "Objects Offset: " << node.objectsOffset << std::endl;
+        std::cout << "Object Count: " << node.objectCount << std::endl;
+        std::cout << std::endl;
+    }
+}
+/**
+ * BFS type shit
+ */
+void Octree::setGPUData() {
+    std::queue<OctreeNode*> nodeQueue;
+    nodeQueue.push(root);
+
+    int currentOffset = 0;
+    std::vector<OctreeNode*> allNodes;
+    std::map<OctreeNode*, int> nodeToIndex;
+
+    while (!nodeQueue.empty()) {
+        OctreeNode* node = nodeQueue.front();
+        nodeQueue.pop();
+
+        allNodes.push_back(node);
+        nodeToIndex[node] = currentOffset;
+        currentOffset++;
+
+        if (!node->isLeaf) {
+            for (int i = 0; i < 8; ++i) {
+                if (node->children[i]) {
+                    nodeQueue.push(node->children[i]);
+                }
+            }
+        }
+    }
+}

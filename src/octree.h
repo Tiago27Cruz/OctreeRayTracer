@@ -32,8 +32,10 @@ class OctreeNode {
         glm::vec3 min; // Bottom Left Back
         glm::vec3 max; // Top Right Front
 
-        std::vector<int> objectIndices; // Indices of the spheres in this node
         int childrenOffset; // Offset to children in flat array (-1 if leaf)
+        int childrenCount; // Number of children in this node
+
+        std::vector<int> objectIndices; // Indices of the spheres in this node
         int objectsOffset; // Offset to object indices array (-1 if not leaf)
         int objectCount; // Number of objects in this node
 
@@ -46,16 +48,32 @@ class Octree {
         Octree(int maxDepth = 8, int maxSpheresPerNode = 8);
         ~Octree();
 
+        // Vectors for GPU
+        vector<GPUOctreeNode> flattenedTree;
+        vector<int> objectIndices;
+
         void build(const vector<Sphere>& spheres);
+
+        void setGPUData();
+        vector<GPUOctreeNode> getFlattenedTree() { return flattenedTree; }
+        vector<int> getObjectIndices() { return objectIndices; }
+
 
         vector<GPUOctreeNode> flattenTree();
         vector<int> getObjectIndices();
+
+        void printFlattenedTree();
     private:
         OctreeNode* root;
         int maxDepth;
         int maxSpheresPerNode;
-
+        
+        // Build functions
         void subdivideNode(OctreeNode* node, const vector<Sphere>& spheres, int depth);
         bool sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, const glm::vec3& boxMax);
+
+        // Cleanup functions
+        void cleanup();
+        void cleanupNode(OctreeNode* node);
         
 };

@@ -4,7 +4,7 @@
 #include <queue>
 
 OctreeNode::OctreeNode(const glm::vec3& min, const glm::vec3& max)
-    : min(min), max(max), isLeaf(true), childrenOffset(-1), objectsOffset(-1), objectCount(0) {
+    : min(min), max(max), isLeaf(true), childrenOffset(-1), objectsOffset(-1), objectCount(0){
     for (int i = 0; i < 8; ++i) {
         children[i] = nullptr;
     }
@@ -73,6 +73,8 @@ void Octree::build(const std::vector<Sphere>& spheres) {
     cout << "Root Node Object Count: " << root->objectCount << std::endl; // DEBUG: Object Count: 3
 
     subdivideNode(root, spheres, 0);
+
+    setGPUData();
 }
 
 OctreeNode* createSubnodes(int index, OctreeNode* node, const glm::vec3& mid) {
@@ -209,6 +211,7 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
     }
 }
 
+// TODO: Understand this lol
 bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, const glm::vec3& boxMax) {
     glm::vec3 closest;
     
@@ -222,106 +225,24 @@ bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, 
     return distSquared <= (sphere.radius * sphere.radius);
 }
 
-/**
- * @brief Flattens the octree into a vector of GPUOctreeNode structures.
- * This function traverses the octree and stores the min, max, childrenOffset,
- * objectsOffset, and objectCount for each node in a flat array format so that
- * it can be passed and used in the fragment shader.
- * 
- * Works like a DFS
- */
-vector<GPUOctreeNode> Octree::flattenTree() {
-    std::vector<GPUOctreeNode> flattenedNodes;
-    std::vector<OctreeNode*> stack;
-    std::map<OctreeNode*, int> nodeToIndex;
-    std::vector<OctreeNode*> allNodes;
-
-    // Add all nodes to the flattened array
-    stack.push_back(root);
-    while (!stack.empty()) {
-        OctreeNode* node = stack.back();
-        stack.pop_back();
-
-
-        allNodes.push_back(node);
-        nodeToIndex[node] = flattenedNodes.size();
-
-
-        GPUOctreeNode gpuNode;
-        gpuNode.min = node->min;
-        gpuNode.max = node->max;
-        gpuNode.childrenOffset = -1;
-        gpuNode.objectsOffset = node->objectsOffset;
-        gpuNode.objectCount = node->objectCount;
-        flattenedNodes.push_back(gpuNode);
-
-        // Add children to the stack
-        if (!node->isLeaf) {
-            for (int i = 0; i < 8; ++i) {
-                if (node->children[i]) {
-                    stack.push_back(node->children[i]);
-                }
-            }
-        }
-    }
-
-    // set children offsets
-    for (size_t i = 0; i < flattenedNodes.size(); i++) {
-        OctreeNode* node = allNodes[i]; 
-        if (!node->isLeaf) {
-            flattenedNodes[i].childrenOffset = nodeToIndex[node->children[0]];
-        }
-    }
-
-    return flattenedNodes;
-}
-
-// TODO: Maybe could be joined with flattenTree
-vector<int> Octree::getObjectIndices() {
-    std::vector<int> objectIndices;
-    std::vector<OctreeNode*> nodeStack;
-    nodeStack.push_back(root);
-    
-    // First: collect all nodes in the order they'll be processed
-    std::vector<OctreeNode*> allNodes;
-    while (!nodeStack.empty()) {
-        OctreeNode* node = nodeStack.back();
-        nodeStack.pop_back();
-        
-        allNodes.push_back(node);
-        
-        if (!node->isLeaf) {
-            for (int i = 0; i < 8; ++i) {
-                if (node->children[i]) {
-                    nodeStack.push_back(node->children[i]);
-                }
-            }
-        }
-    }
-    
-    // Second: set offsets and collect indices
-    int currentOffset = 0;
-    for (OctreeNode* node : allNodes) {
-        if (node->isLeaf && !node->objectIndices.empty()) {
-            node->objectsOffset = currentOffset;
-            objectIndices.insert(objectIndices.end(), node->objectIndices.begin(), node->objectIndices.end()); // adds all indices to the end of the vector
-            currentOffset += node->objectIndices.size();
-        }
-    }
-    
-    return objectIndices;
-}
-
 void Octree::printFlattenedTree() {
-    std::vector<GPUOctreeNode> flattenedNodes = flattenTree();
     int i = 0;
-    for (const GPUOctreeNode& node : flattenedNodes) {
+    std::cout << std::endl;
+    for (const GPUOctreeNode& node : flattenedTree) {
         std::cout << "Node " << i++ << ":" << std::endl;
         std::cout << "Node Min: " << node.min.x << ", " << node.min.y << ", " << node.min.z << std::endl;
         std::cout << "Node Max: " << node.max.x << ", " << node.max.y << ", " << node.max.z << std::endl;
         std::cout << "Children Offset: " << node.childrenOffset << std::endl;
         std::cout << "Objects Offset: " << node.objectsOffset << std::endl;
         std::cout << "Object Count: " << node.objectCount << std::endl;
+        if (node.objectCount > 0) {
+            std::cout << "Object Indices: ";
+            for (int index : objectIndices) {
+                std::cout << index << " ";
+            }
+            std::cout << std::endl;
+        }
+        
         std::cout << std::endl;
     }
 }
@@ -346,10 +267,33 @@ void Octree::setGPUData() {
 
         if (!node->isLeaf) {
             for (int i = 0; i < 8; ++i) {
-                if (node->children[i]) {
-                    nodeQueue.push(node->children[i]);
-                }
+                if (!node->children[i]) throw std::invalid_argument("Child node is null on non-leaf node");
+                nodeQueue.push(node->children[i]);
             }
         }
+    }
+
+    int currentObjectIndex = 0;
+    for (OctreeNode* node : allNodes) {
+        if (!node->isLeaf) {
+            node->childrenOffset = nodeToIndex[node->children[0]];
+        } else if (node->isLeaf && node->objectCount > 0) {
+            objectIndices.insert(objectIndices.end(), node->objectIndices.begin(), node->objectIndices.end());
+            node->objectsOffset = currentObjectIndex;
+            currentObjectIndex += node->objectCount;
+        }
+    }
+
+    // Flatten the tree
+    flattenedTree.reserve(allNodes.size());
+    for (OctreeNode* node : allNodes) {
+        GPUOctreeNode gpuNode;
+        gpuNode.min = node->min;
+        gpuNode.max = node->max;
+        gpuNode.childrenOffset = node->childrenOffset;
+        gpuNode.objectsOffset = node->objectsOffset;
+        gpuNode.objectCount = node->objectCount;
+
+        flattenedTree.push_back(gpuNode);
     }
 }

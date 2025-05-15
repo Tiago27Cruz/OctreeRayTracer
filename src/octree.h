@@ -32,11 +32,11 @@ class OctreeNode {
         glm::vec3 min; // Bottom Left Back
         glm::vec3 max; // Top Right Front
 
-        int childrenOffset; // Offset to children in flat array (-1 if leaf)
-        int childrenCount; // Number of children in this node
+        int childrenOffset; // Offset to first children in flat array (-1 if leaf)
+        // there is no need for childrenCount, as if it has any children, it must have 8 children
 
-        std::vector<int> objectIndices; // Indices of the spheres in this node
-        int objectsOffset; // Offset to object indices array (-1 if not leaf)
+        std::vector<int> objectIndices; // Indices of the spheres in this node, i.e. if the sphere1 and sphere3 are in this node, the objectIndices will be [1, 3]
+        int objectsOffset; // Offset to object indices array (-1 if not leaf, has it has no objects (spheres))
         int objectCount; // Number of objects in this node
 
         OctreeNode(const glm::vec3& min, const glm::vec3& max);
@@ -55,12 +55,6 @@ class Octree {
         void build(const vector<Sphere>& spheres);
 
         void setGPUData();
-        vector<GPUOctreeNode> getFlattenedTree() { return flattenedTree; }
-        vector<int> getObjectIndices() { return objectIndices; }
-
-
-        vector<GPUOctreeNode> flattenTree();
-        vector<int> getObjectIndices();
 
         void printFlattenedTree();
     private:

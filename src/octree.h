@@ -52,7 +52,7 @@ class Octree {
         vector<GPUOctreeNode> flattenedTree;
         vector<int> objectIndices;
 
-        void build(const vector<Sphere>& spheres);
+        void build(const vector<Sphere>& spheres, const int debug = 0);
 
         void setGPUData();
 
@@ -63,7 +63,7 @@ class Octree {
         int maxSpheresPerNode;
         
         // Build functions
-        void subdivideNode(OctreeNode* node, const vector<Sphere>& spheres, int depth);
+        void subdivideNode(OctreeNode* node, const vector<Sphere>& spheres, int depth, const int debug = 0);
         bool sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, const glm::vec3& boxMax);
 
         // Cleanup functions

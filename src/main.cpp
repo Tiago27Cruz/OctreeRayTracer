@@ -23,10 +23,10 @@ void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
-vector<Sphere> generateSpheres();
+vector<Sphere> generateSpheres(const int debug = 0);
 
 // camera
-Camera camera(glm::vec3(0.0f, 5.0f, 10.0f)); // Higher up and further back
+Camera camera(glm::vec3(0.0f, 5.0f, 10.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -36,11 +36,17 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 int main() {
-
+    int debug = 1;
+    if (debug) {
+        std::cout << "Debug mode enabled" << std::endl;
+        camera.Position = glm::vec3(30.0f, 20.0f, -50.0f);
+    } 
     GLFWwindow* window = startGLFW();
     if (window == nullptr) {
         return -1;
     }
+
+    
 
     std::vector<float> quadVertices = {
         // positions        // texture coords
@@ -59,12 +65,19 @@ int main() {
 
     Shader shader("shaders/vertex_shader.glsl", "shaders/octree_fragment_shader.glsl");
 
-    std::vector<Sphere> spheres = generateSpheres();
+    std::vector<Sphere> spheres = generateSpheres(debug);
 
-    Octree octree(8, 4); 
-    octree.build(spheres);
+    int maxDepth = 8;
+    int maxSpheresPerNode = 4;
+    if (debug) {
+        maxDepth = 3;
+        maxSpheresPerNode = 2;
+    }
 
-    octree.printFlattenedTree();
+    Octree octree(maxDepth, maxSpheresPerNode); 
+    octree.build(spheres, debug);
+
+    if (debug) octree.printFlattenedTree();
     
 
     GLuint spheresSSBO, octreeNodesSSBO, objectIndicesSSBO, octreeNodes2SSBO, octreeCountsSSBO, sphereDataSSBO, sphereData2SSBO;
@@ -306,8 +319,15 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 /**
  * @brief Generate a vector of spheres with predefined properties.
  */
-vector<Sphere> generateSpheres() {
+vector<Sphere> generateSpheres(int debug) {
     std::vector<Sphere> spheres;
+
+    if (debug) {
+        spheres.push_back(Sphere(vec3( -10.000000, -10.000000, -10.000000), 3.000000, 0, vec3( 0.596282, 0.140784, 0.017972), 1.000000, 1.000000)); // (-13, -13, -13) to (-7, -7, -7)
+        spheres.push_back(Sphere(vec3( 10.000000, 10.000000, 10.000000), 3.000000, 0,vec3( 0.952200, 0.391551, 0.915972), 1.000000, 1.000000)); // (7, 7, 7) to (13, 13, 13)
+        spheres.push_back(Sphere(vec3( -10.000000, 10.000000, -10.000000), 3.000000, 0, vec3( 0.002612, 0.598319, 0.435378), 1.000000, 1.000000)); // (-13, 7, -13) to (-7, 13, -7)
+        return spheres;
+    }
 
     spheres.push_back(Sphere(vec3( 0.000000, -1000.000000, 0.000000), 1000.000000, 0, vec3( 0.500000, 0.500000, 0.500000), 1.000000, 1.000000));
     spheres.push_back(Sphere(vec3( -7.995381, 0.200000, -7.478668), 0.200000, 0, vec3( 0.380012, 0.506085, 0.762437), 1.000000, 1.000000));
@@ -393,10 +413,6 @@ vector<Sphere> generateSpheres() {
     spheres.push_back(Sphere(vec3( 0.000000, 1.000000, 0.000000), 1.000000, 2, vec3( 0.000000, 0.000000, 0.000000), 1.000000, 1.500000));
     spheres.push_back(Sphere(vec3( -4.000000, 1.000000, 0.000000), 1.000000, 0, vec3( 0.400000, 0.200000, 0.100000), 1.000000, 1.000000));
     spheres.push_back(Sphere(vec3( 4.000000, 1.000000, 0.000000), 1.000000, 1, vec3( 0.700000, 0.600000, 0.500000), 0.000000, 1.000000));
-
-    //spheres.push_back(Sphere(vec3( -10.000000, -10.000000, -10.000000), 3.000000, 0, vec3( 0.002612, 0.598319, 0.435378), 1.000000, 1.000000)); // (-13, -13, -13) to (-7, -7, -7)
-    //spheres.push_back(Sphere(vec3( 10.000000, 10.000000, 10.000000), 3.000000, 0, vec3( 0.002612, 0.598319, 0.435378), 1.000000, 1.000000)); // (7, 7, 7) to (13, 13, 13)
-    //spheres.push_back(Sphere(vec3( -10.000000, 10.000000, -10.000000), 3.000000, 0, vec3( 0.002612, 0.598319, 0.435378), 1.000000, 1.000000)); // (-13, 7, -13) to (-7, 13, -7)
 
     return spheres;
 }

@@ -43,7 +43,7 @@ void Octree::cleanupNode(OctreeNode* node) {
     }
 }
 
-void Octree::build(const std::vector<Sphere>& spheres) {
+void Octree::build(const std::vector<Sphere>& spheres, const int debug) {
     if (spheres.empty()) {
         throw std::invalid_argument("Sphere list is empty");
     }
@@ -61,18 +61,20 @@ void Octree::build(const std::vector<Sphere>& spheres) {
     
     root = new OctreeNode(min, max);
 
-    // DEBUG
-    cout << "Root Node Min: " << root->min.x << ", " << root->min.y << ", " << root->min.z << std::endl; // Min: (-13, -13, -13)
-    cout << "Root Node Max: " << root->max.x << ", " << root->max.y << ", " << root->max.z << std::endl; // Max: (13, 13, 13)
-
     // since it contains everything, we add all indices to the root node
     for (int i = 0; i < spheres.size(); ++i) {
         root->objectIndices.push_back(i); 
     }
     root->objectCount = spheres.size();
-    cout << "Root Node Object Count: " << root->objectCount << std::endl; // DEBUG: Object Count: 3
 
-    subdivideNode(root, spheres, 0);
+    // DEBUG
+    if (debug) {
+        std::cout << "Sphere Min: " << min.x << ", " << min.y << ", " << min.z << std::endl; // Min: (-13, -13, -13)
+        std::cout << "Sphere Max: " << max.x << ", " << max.y << ", " << max.z << std::endl; // Max: (13, 13, 13)
+        cout << "Root Node Object Count: " << root->objectCount << std::endl; // DEBUG: Object Count: 3
+    }
+
+    subdivideNode(root, spheres, 0, debug);
 
     setGPUData();
 }
@@ -169,16 +171,16 @@ OctreeNode* createSubnodes(int index, OctreeNode* node, const glm::vec3& mid) {
     return new OctreeNode(childMin, childMax);
 }
 
-void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres, int depth) {
+void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres, int depth, const int debug) {
     // Stop if we're at max depth
     if (depth >= maxDepth || node->objectIndices.size() <= static_cast<size_t>(maxSpheresPerNode)) {
-        //std::cout << "Stopping subdivision at depth " << depth << " with " << node->objectIndices.size() << " objects." << std::endl;
+        if (debug) std::cout << "Stopping subdivision at depth " << depth << " with " << node->objectIndices.size() << " objects." << std::endl;
         return;
     }
 
 
     glm::vec3 mid = (node->min + node->max) * 0.5f;
-    std::cout << "Midpoint: " << mid.x << ", " << mid.y << ", " << mid.z << std::endl;
+    if (debug) std::cout << "Midpoint: " << mid.x << ", " << mid.y << ", " << mid.z << std::endl;
     
 
     node->isLeaf = false;
@@ -192,7 +194,7 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
         
         for (int i = 0; i < 8; ++i) {
             if (sphereIntersectsBox(sphere, node->children[i]->min, node->children[i]->max)) {
-                cout << "Sphere " << sphereIdx << " intersects child node " << i << std::endl;
+                if (debug) cout << "Sphere " << sphereIdx << " intersects child node " << i << std::endl;
                 node->children[i]->objectIndices.push_back(sphereIdx);
                 node->children[i]->objectCount++;
             }
@@ -206,7 +208,7 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
 
     for (int i = 0; i < 8; ++i) {
         if (!node->children[i]->objectIndices.empty()) {
-            subdivideNode(node->children[i], spheres, depth + 1);
+            subdivideNode(node->children[i], spheres, depth + 1, debug);
         }
     }
 }

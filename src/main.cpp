@@ -26,7 +26,7 @@ void processInput(GLFWwindow *window);
 vector<Sphere> generateSpheres(const int debug = 0);
 
 // camera
-Camera camera(glm::vec3(0.0f, 5.0f, 10.0f));
+Camera camera(glm::vec3(0.0f, 5.0f, -10.0f));
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -36,7 +36,7 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 int main() {
-    int debug = 1;
+    int debug = 0;
     if (debug) {
         std::cout << "Debug mode enabled" << std::endl;
         camera.Position = glm::vec3(30.0f, 20.0f, -50.0f);

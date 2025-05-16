@@ -1,7 +1,7 @@
 #version 430 core
 
-#define NUMSAMPLES 8
-#define MAXDEPTH 10
+#define NUMSAMPLES 32
+#define MAXDEPTH 4
 #define MAXFLOAT 3.402823466e+38
 #define PI 3.14159265359
 #define LAMBERT 0
@@ -86,12 +86,15 @@ struct Camera {
 };
 
 // Random functions
-float rand2D()
-{
-    randState.x = fract(sin(dot(randState.xy, vec2(12.9898, 78.233))) * 43758.5453);
-    randState.y = fract(sin(dot(randState.xy, vec2(12.9898, 78.233))) * 43758.5453);;
+float rand2D() {
+    uint state = uint(randState.x * 747796405u + randState.y * 2891336453u);
+    state = ((state >> uint(16)) ^ state) * uint(73244475);
+    state = ((state >> uint(16)) ^ state) * uint(73244475);
+    state = (state >> uint(16)) ^ state;
     
-    return randState.x;
+    randState.x = randState.y;
+    randState.y = float(state) / 4294967296.0;
+    return randState.y;
 }
 
 
@@ -187,13 +190,20 @@ Camera Camera_initFromViewMatrix(mat4 viewMatrix, vec3 position, float fovDegree
 
 // Generate a ray from camera
 Ray Camera_getRay(Camera camera, float s, float t) {
+    // Add a very small jitter to help with anti-aliasing edges
+    float pixelRadius = 0.5 / max(iResolution.x, iResolution.y);
+    float jitterX = pixelRadius * (rand2D() - 0.5);
+    float jitterY = pixelRadius * (rand2D() - 0.5);
+    
     vec3 rd = camera.lensRadius * random_in_unit_disk();
     vec3 offset = camera.u * rd.x + camera.v * rd.y;
     
     Ray ray;
     ray.origin = camera.origin + offset;
-    ray.direction = normalize(camera.lowerLeftCorner + s * camera.horizontal + 
-                   t * camera.vertical - camera.origin - offset);
+    ray.direction = normalize(camera.lowerLeftCorner + 
+                    (s + jitterX) * camera.horizontal + 
+                    (t + jitterY) * camera.vertical - 
+                    camera.origin - offset);
     return ray;
 }
 
@@ -284,10 +294,12 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
         if (node_tmin > closest_so_far) continue;
         
         // get data
-        vec3 nodeMin = octreeNodes[nodeIdx].xyz;
-        int childrenOffset = int(octreeNodes[nodeIdx].w);
-        vec3 nodeMax = octreeNodes2[nodeIdx].xyz;
-        int objectsOffset = int(octreeNodes2[nodeIdx].w);
+        vec4 node1 = octreeNodes[nodeIdx];
+        vec4 node2 = octreeNodes2[nodeIdx];
+        vec3 nodeMin = node1.xyz;
+        vec3 nodeMax = node2.xyz;
+        int childrenOffset = int(node1.w);
+        int objectsOffset = int(node2.w);
         int objectCount = octreeNodeCounts[nodeIdx];
         
         // Test for intersection
@@ -373,70 +385,60 @@ float schlick(float cosine, float refractionIndex) {
 
 bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 attenuation) {
     int materialType = isectInfo.materialType;
-    
-    if (materialType == LAMBERT) {
-        vec3 target = isectInfo.point + isectInfo.normal + random_in_unit_sphere();
-        wi.origin = isectInfo.point;
-        wi.direction = normalize(target - isectInfo.point);
-        attenuation = isectInfo.albedo;
-        return true;
-    } 
-    else if (materialType == METAL) {
-        float fuzz = isectInfo.fuzz;
+    wi.origin = isectInfo.point;
 
-        vec3 reflected = reflect(normalize(wo.direction), isectInfo.normal);
+    switch (materialType) {
+        case LAMBERT:
+            vec3 target = isectInfo.point + isectInfo.normal + random_in_unit_sphere();
+            wi.direction = normalize(target - isectInfo.point);
+            attenuation = isectInfo.albedo;
+            return true;
 
-        wi.origin = isectInfo.point;
-        wi.direction = reflected + fuzz * random_in_unit_sphere();
+        case METAL:
+            float fuzz = isectInfo.fuzz;
+            vec3 reflected = reflect(normalize(wo.direction), isectInfo.normal);
+            wi.direction = reflected + fuzz * random_in_unit_sphere();
+            attenuation = isectInfo.albedo;
+            return (dot(wi.direction, isectInfo.normal) > 0.0f);
 
-        attenuation = isectInfo.albedo;
-
-        return (dot(wi.direction, isectInfo.normal) > 0.0f);
+        case DIELECTRIC:
+            vec3 outward_normal;
+            float ni_over_nt;
+            float cosine;
+            float rafractionIndex = isectInfo.refractionIndex;
+            attenuation = vec3(1.0f);
+            
+            // Determine if we're entering or exiting the material
+            if (dot(wo.direction, isectInfo.normal) > 0.0f) {
+                outward_normal = -isectInfo.normal;
+                ni_over_nt = rafractionIndex;
+                cosine = dot(wo.direction, isectInfo.normal) / length(wo.direction);
+                cosine = sqrt(1.0f - rafractionIndex * rafractionIndex * (1.0f - cosine * cosine));
+            } else {
+                outward_normal = isectInfo.normal;
+                ni_over_nt = 1.0f / rafractionIndex;
+                cosine = -dot(wo.direction, isectInfo.normal) / length(wo.direction);
+            }
+            
+            // Calculate reflection probability
+            float reflect_prob;
+            vec3 refracted;
+            bool can_refract = refractVec(wo.direction, outward_normal, ni_over_nt, refracted);
+            reflect_prob = can_refract ? schlick(cosine, rafractionIndex) : 1.0f;
+            
+            if (rand2D() < reflect_prob) {
+                // Reflection path
+                wi.direction = reflect(wo.direction, isectInfo.normal);
+            } else {
+                // We already calculated refraction above if possible
+                wi.direction = refracted;
+            }
+            
+            return true;
+        default:
+            return false;
     }
-    else if (materialType == DIELECTRIC) {
-        vec3 outward_normal;
-        vec3 reflected = reflect(wo.direction, isectInfo.normal);
 
-        float ni_over_nt;
-
-        attenuation = vec3(1.0f, 1.0f, 1.0f);
-        vec3 refracted;
-        float reflect_prob;
-        float cosine;
-
-        float rafractionIndex = isectInfo.refractionIndex;
-
-        if (dot(wo.direction, isectInfo.normal) > 0.0f)
-        {
-            outward_normal = -isectInfo.normal;
-            ni_over_nt = rafractionIndex;
-           
-            cosine = dot(wo.direction, isectInfo.normal) / length(wo.direction);
-            cosine = sqrt(1.0f - rafractionIndex * rafractionIndex * (1.0f - cosine * cosine));
-        }
-        else
-        {
-            outward_normal = isectInfo.normal;
-            ni_over_nt = 1.0f / rafractionIndex;
-            cosine = -dot(wo.direction, isectInfo.normal) / length(wo.direction);
-        }
-        if (refractVec(wo.direction, outward_normal, ni_over_nt, refracted))
-            reflect_prob = schlick(cosine, rafractionIndex);
-        else
-            reflect_prob = 1.0f;
-        if (rand2D() < reflect_prob)
-        {
-            wi.origin = isectInfo.point;
-            wi.direction = reflected;
-        }
-        else
-        {
-            wi.origin = isectInfo.point;
-            wi.direction = refracted;
-        }
-
-        return true;
-    }
     
     return false;
 }
@@ -452,14 +454,17 @@ vec3 skyColor(Ray ray) {
 vec3 radiance(Ray ray) {
     IntersectInfo rec;
     vec3 col = vec3(1.0, 1.0, 1.0);
+    float importance = 1.0;
     
     for (int i = 0; i < MAXDEPTH; i++) {
+        if (importance < 0.01) break;
+
         if (intersectScene(ray, 0.001, MAXFLOAT, rec)) {
             Ray wi;
             vec3 attenuation;
             
             bool wasScattered = Material_bsdf(rec, ray, wi, attenuation);
-            
+
             ray.origin = wi.origin;
             ray.direction = wi.direction;
             
@@ -469,11 +474,14 @@ vec3 radiance(Ray ray) {
                 col *= vec3(0.0, 0.0, 0.0);
                 break;
             }
+            importance *= max(attenuation.r, max(attenuation.g, attenuation.b));
         }
         else {
             col *= skyColor(ray);
             break;
         }
+
+        
     }
     
     return col;
@@ -489,9 +497,14 @@ void main() {
     // Accumulate samples
     vec3 col = vec3(0.0, 0.0, 0.0);
     
+    #pragma unroll // TODO: Idk if this helps
     for (int s = 0; s < NUMSAMPLES; s++) {
-        float u = float(FragCoord.x + rand2D()) / float(iResolution.x);
-        float v = float(FragCoord.y + rand2D()) / float(iResolution.y);
+        int sqrt_ns = int(sqrt(float(NUMSAMPLES)));
+        int i = s % sqrt_ns;
+        int j = s / sqrt_ns;
+        
+        float u = float(FragCoord.x + (float(i) + rand2D()) / float(sqrt_ns)) / float(iResolution.x);
+        float v = float(FragCoord.y + (float(j) + rand2D()) / float(sqrt_ns)) / float(iResolution.y);
         
         Ray r = Camera_getRay(camera, u, v);
         col += radiance(r);
@@ -499,7 +512,8 @@ void main() {
     
     // Average samples and gamma correct
     col /= float(NUMSAMPLES);
-    col = vec3(sqrt(col[0]), sqrt(col[1]), sqrt(col[2]));
+    // Power 2.2 gamma correction
+    col = pow(col, vec3(1.0/2.2));
     
     FragColor = vec4(col, 1.0);
 }

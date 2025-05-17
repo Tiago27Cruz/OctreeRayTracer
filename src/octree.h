@@ -1,3 +1,6 @@
+#ifndef OCTREE_H
+#define OCTREE_H
+
 #include <iostream>
 #include <glm/glm.hpp>
 #include <vector>
@@ -71,3 +74,5 @@ class Octree {
         void cleanupNode(OctreeNode* node);
         
 };
+
+#endif // OCTREE_H

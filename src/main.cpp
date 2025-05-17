@@ -10,20 +10,16 @@
 #include <glm/gtc/type_ptr.hpp>
 #include "sphere.h"
 #include "octree.h"
+#include "config.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
-
-
-// settings
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
 
 GLFWwindow* startGLFW();
 void framebuffer_size_callback(GLFWwindow* window, int width, int height);
 void mouse_callback(GLFWwindow* window, double xpos, double ypos);
 void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
-vector<Sphere> generateSpheres(const int debug = 0);
+vector<Sphere> generateSpheres();
 
 // camera
 Camera camera(glm::vec3(0.0f, 5.0f, -10.0f));
@@ -36,8 +32,7 @@ float deltaTime = 0.0f;	// time between current frame and last frame
 float lastFrame = 0.0f;
 
 int main() {
-    int debug = 0;
-    if (debug) {
+    if (DEBUG) {
         std::cout << "Debug mode enabled" << std::endl;
         camera.Position = glm::vec3(30.0f, 20.0f, -50.0f);
     } 
@@ -65,19 +60,19 @@ int main() {
 
     Shader shader("shaders/vertex_shader.glsl", "shaders/octree_fragment_shader.glsl");
 
-    std::vector<Sphere> spheres = generateSpheres(debug);
+    std::vector<Sphere> spheres = generateSpheres();
 
-    int maxDepth = 8;
-    int maxSpheresPerNode = 4;
-    if (debug) {
-        maxDepth = 3;
-        maxSpheresPerNode = 2;
+    int maxDepth = MAXDEPTH;
+    int maxSpheresPerNode = MAXSPHERESPERNODE;
+    if (DEBUG) {
+        maxDepth = DEBUGDEPTH;
+        maxSpheresPerNode = DEBUGSPHERESPERNODE;
     }
 
     Octree octree(maxDepth, maxSpheresPerNode); 
-    octree.build(spheres, debug);
+    octree.build(spheres, DEBUG);
 
-    if (debug) octree.printFlattenedTree();
+    if (DEBUG) octree.printFlattenedTree();
     
 
     GLuint spheresSSBO, octreeNodesSSBO, objectIndicesSSBO, octreeNodes2SSBO, octreeCountsSSBO, sphereDataSSBO, sphereData2SSBO;
@@ -150,6 +145,8 @@ int main() {
     shader.setInt("useOctree", 1);
     shader.setInt("octreeNodeCount", octree.flattenedTree.size());
     shader.setInt("sphereCount", spheres.size());
+    shader.setInt("maxDepth", MAXRAYSDEPTH);
+    shader.setInt("numSamples", NUMSAMPLES);
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
     shader.setMat4("projection", projection); 
@@ -319,10 +316,10 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset)
 /**
  * @brief Generate a vector of spheres with predefined properties.
  */
-vector<Sphere> generateSpheres(int debug) {
+vector<Sphere> generateSpheres() {
     std::vector<Sphere> spheres;
 
-    if (debug) {
+    if (DEBUG) {
         spheres.push_back(Sphere(vec3( -10.000000, -10.000000, -10.000000), 3.000000, 0, vec3( 0.596282, 0.140784, 0.017972), 1.000000, 1.000000)); // (-13, -13, -13) to (-7, -7, -7)
         spheres.push_back(Sphere(vec3( 10.000000, 10.000000, 10.000000), 3.000000, 0,vec3( 0.952200, 0.391551, 0.915972), 1.000000, 1.000000)); // (7, 7, 7) to (13, 13, 13)
         spheres.push_back(Sphere(vec3( -10.000000, 10.000000, -10.000000), 3.000000, 0, vec3( 0.002612, 0.598319, 0.435378), 1.000000, 1.000000)); // (-13, 7, -13) to (-7, 13, -7)

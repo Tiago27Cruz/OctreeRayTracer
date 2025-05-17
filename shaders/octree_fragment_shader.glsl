@@ -1,7 +1,5 @@
 #version 430 core
 
-#define NUMSAMPLES 32
-#define MAXDEPTH 4
 #define MAXFLOAT 3.402823466e+38
 #define PI 3.14159265359
 #define LAMBERT 0
@@ -51,6 +49,9 @@ layout(std430, binding = 6) buffer ObjectIndicesBuffer {
 uniform int useOctree;
 uniform int octreeNodeCount;
 uniform int sphereCount;
+
+uniform int numSamples;
+uniform int maxDepth;
 
 // Random state for sampling
 vec2 randState;
@@ -456,7 +457,7 @@ vec3 radiance(Ray ray) {
     vec3 col = vec3(1.0, 1.0, 1.0);
     float importance = 1.0;
     
-    for (int i = 0; i < MAXDEPTH; i++) {
+    for (int i = 0; i < maxDepth; i++) {
         if (importance < 0.01) break;
 
         if (intersectScene(ray, 0.001, MAXFLOAT, rec)) {
@@ -498,8 +499,8 @@ void main() {
     vec3 col = vec3(0.0, 0.0, 0.0);
     
     #pragma unroll // TODO: Idk if this helps
-    for (int s = 0; s < NUMSAMPLES; s++) {
-        int sqrt_ns = int(sqrt(float(NUMSAMPLES)));
+    for (int s = 0; s < numSamples; s++) {
+        int sqrt_ns = int(sqrt(float(numSamples)));
         int i = s % sqrt_ns;
         int j = s / sqrt_ns;
         
@@ -511,7 +512,7 @@ void main() {
     }
     
     // Average samples and gamma correct
-    col /= float(NUMSAMPLES);
+    col /= float(numSamples);
     // Power 2.2 gamma correction
     col = pow(col, vec3(1.0/2.2));
     

@@ -8,7 +8,7 @@ if (WIN32)
 
     set(GLFW_LIB_PATH "${CMAKE_SOURCE_DIR}/lib")
 
-    add_executable(edaa src/main.cpp src/glad.c src/opengl/shader.h src/opengl/shader.cpp src/opengl/mesh.cpp src/opengl/mesh.h src/opengl/camera.h src/octree.h src/octree.cpp src/sphere.h)
+    add_executable(edaa src/main.cpp src/glad.c src/opengl/shader.h src/opengl/shader.cpp src/opengl/mesh.cpp src/opengl/mesh.h src/opengl/camera.h src/octree.h src/octree.cpp src/sphere.h src/config.h)
 
     target_link_directories(edaa PRIVATE "${GLFW_LIB_PATH}")
     target_link_libraries(edaa "${GLFW_LIB_PATH}\\libglfw3.a" opengl32)

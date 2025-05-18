@@ -14,9 +14,8 @@ uniform mat4 view;
 uniform vec3 cameraPosition;
 uniform float cameraZoom;
 
-// Resolution and time
+// Resolution
 uniform vec3 iResolution;
-uniform float iTime;
 
 layout(std430, binding = 0) buffer SphereBuffer {
     vec4 spheres[];
@@ -88,13 +87,16 @@ struct Camera {
 
 // Random functions
 float rand2D() {
-    uint state = uint(randState.x * 747796405u + randState.y * 2891336453u);
-    state = ((state >> uint(16)) ^ state) * uint(73244475);
-    state = ((state >> uint(16)) ^ state) * uint(73244475);
-    state = (state >> uint(16)) ^ state;
+    uint state = uint(randState.x * 1664525u + randState.y * 1013904223u) + 1013904223u;
+    state = state ^ (state >> 16u);
+    state *= 0x85ebca6bu;
+    state = state ^ (state >> 13u);
+    state *= 0xc2b2ae35u;
+    state = state ^ (state >> 16u);
     
-    randState.x = randState.y;
-    randState.y = float(state) / 4294967296.0;
+    randState.x = fract(randState.y * 1664525.0);
+    randState.y = fract(float(state) / 4294967296.0);
+    
     return randState.y;
 }
 
@@ -144,19 +146,29 @@ vec3 random_in_unit_disk()
     return vec3(r * cos(phi), r * sin(phi), 0.0f);
 }
 
-vec3 random_in_unit_sphere()
-{
+vec3 random_in_unit_sphere(){
+    float z = 2.0 * rand2D() - 1.0;
     float phi = 2.0 * PI * rand2D();
-    float cosTheta = 2.0 * rand2D() - 1.0;
-    float u = rand2D();
+    float r = pow(rand2D(), 1.0/3.0);
+    float sqrt1minz2 = sqrt(1.0 - z*z);
+    return vec3(
+        r * sqrt1minz2 * cos(phi),
+        r * sqrt1minz2 * sin(phi),
+        r * z
+    );
+}
 
-    float theta = acos(cosTheta);
-    float r = pow(u, 1.0 / 3.0);
-
-    float x = r * sin(theta) * cos(phi);
-    float y = r * sin(theta) * sin(phi);
-    float z = r * cos(theta);
-
+vec3 random_cosine_direction() {
+    // More efficient for diffuse materials
+    float r1 = rand2D();
+    float r2 = rand2D();
+    float phi = 2.0 * PI * r1;
+    
+    float sqrt_r2 = sqrt(r2);
+    float x = cos(phi) * sqrt_r2;
+    float y = sin(phi) * sqrt_r2;
+    float z = sqrt(1.0 - r2);
+    
     return vec3(x, y, z);
 }
 
@@ -214,38 +226,45 @@ bool Sphere_hit(int sphereIdx, Ray ray, float t_min, float t_max, inout Intersec
     float radius = spheres[sphereIdx].w;
     
     vec3 oc = ray.origin - center;
+    
     float a = dot(ray.direction, ray.direction);
-    float b = dot(oc, ray.direction);
+    float half_b = dot(oc, ray.direction);
     float c = dot(oc, oc) - radius * radius;
-    float discriminant = b * b - a * c;
+    float discriminant = half_b * half_b - a * c;
     
     if (discriminant > 0.0) {
-        float temp = (-b - sqrt(discriminant)) / a;
+        float sqrtd = sqrt(discriminant);
+        
+        float temp = (-half_b - sqrtd) / a;
         if (temp < t_max && temp > t_min) {
             rec.t = temp;
             rec.point = ray.origin + temp * ray.direction;
             rec.normal = (rec.point - center) / radius;
             
-            // Material properties
-            rec.materialType = int(sphereData[sphereIdx].x);
-            rec.albedo = sphereData[sphereIdx].yzw;
-            rec.fuzz = sphereData2[sphereIdx].x;
-            rec.refractionIndex = sphereData2[sphereIdx].y;
+            vec4 matData = sphereData[sphereIdx];
+            rec.materialType = int(matData.x);
+            rec.albedo = matData.yzw;
+            
+            vec4 matData2 = sphereData2[sphereIdx];
+            rec.fuzz = matData2.x;
+            rec.refractionIndex = matData2.y;
             
             return true;
         }
         
-        temp = (-b + sqrt(discriminant)) / a;
+        temp = (-half_b + sqrtd) / a;
         if (temp < t_max && temp > t_min) {
             rec.t = temp;
             rec.point = ray.origin + temp * ray.direction;
             rec.normal = (rec.point - center) / radius;
             
-            // Material properties
-            rec.materialType = int(sphereData[sphereIdx].x);
-            rec.albedo = sphereData[sphereIdx].yzw;
-            rec.fuzz = sphereData2[sphereIdx].x;
-            rec.refractionIndex = sphereData2[sphereIdx].y;
+            vec4 matData = sphereData[sphereIdx];
+            rec.materialType = int(matData.x);
+            rec.albedo = matData.yzw;
+
+            vec4 matData2 = sphereData2[sphereIdx];
+            rec.fuzz = matData2.x;
+            rec.refractionIndex = matData2.y;
             
             return true;
         }
@@ -269,7 +288,7 @@ bool rayBoxIntersection(Ray ray, vec3 boxMin, vec3 boxMax, out float tmin, out f
 }
 
 bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
-    const int MAX_STACK = 200;
+    const int MAX_STACK = 64;
     int nodeStack[MAX_STACK];
     float tminStack[MAX_STACK];
     float tmaxStack[MAX_STACK];
@@ -283,13 +302,12 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     
     bool hit_anything = false;
     float closest_so_far = t_max;
+
     
-    // If the stack is empty, it's finished
     while (stackPtr >= 0) {
         int nodeIdx = nodeStack[stackPtr];
         float node_tmin = tminStack[stackPtr];
-        float node_tmax = tmaxStack[stackPtr];
-        stackPtr--;
+        float node_tmax = tmaxStack[stackPtr--];
         
         // if we found already a closer node, continue
         if (node_tmin > closest_so_far) continue;
@@ -324,10 +342,18 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
             }
         } 
         else {
-            // Push children in front-to-back order
-            // TODO: maybe sort based on ray direction
+            
+            // Bit Mask so we tranverse the octree starting from the closest octants
+            int octantMask = 0;
+
+            if (ray.direction.x < 0.0) octantMask |= 2;  // Flip bit 1 (X axis)
+            if (ray.direction.y < 0.0) octantMask |= 4;  // Flip bit 2 (Y axis)
+            if (ray.direction.z < 0.0) octantMask |= 1;  // Flip bit 0 (Z axis)
+
             for (int i = 0; i < 8; i++) {
-                int childIdx = childrenOffset + i;
+                int octant = (i ^ octantMask);
+
+                int childIdx = childrenOffset + octant;
                 if (childIdx >= octreeNodeCount) continue;
                 
                 if (stackPtr < MAX_STACK - 1) {
@@ -390,8 +416,14 @@ bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 att
 
     switch (materialType) {
         case LAMBERT:
-            vec3 target = isectInfo.point + isectInfo.normal + random_in_unit_sphere();
-            wi.direction = normalize(target - isectInfo.point);
+            vec3 local_dir = random_cosine_direction();
+
+            // Transform from local to world space
+            vec3 w = isectInfo.normal;
+            vec3 u = normalize(cross((abs(w.x) > 0.1 ? vec3(0, 1, 0) : vec3(1, 0, 0)), w));
+            vec3 v = cross(w, u);
+            
+            wi.direction = normalize(local_dir.x * u + local_dir.y * v + local_dir.z * w);
             attenuation = isectInfo.albedo;
             return true;
 
@@ -446,16 +478,16 @@ bool Material_bsdf(IntersectInfo isectInfo, Ray wo, inout Ray wi, inout vec3 att
 
 // Sky color for rays that don't hit anything
 vec3 skyColor(Ray ray) {
-    vec3 unit_direction = normalize(ray.direction);
-    float t = 0.5 * (unit_direction.y + 1.0);
+    float t = 0.5 * (ray.direction.y + 1.0);
     return (1.0 - t) * vec3(1.0, 1.0, 1.0) + t * vec3(0.5, 0.7, 1.0);
 }
 
-// Main radiance computation with octree traversal
 vec3 radiance(Ray ray) {
     IntersectInfo rec;
     vec3 col = vec3(1.0, 1.0, 1.0);
     float importance = 1.0;
+
+    ray.direction = normalize(ray.direction);
     
     for (int i = 0; i < maxDepth; i++) {
         if (importance < 0.01) break;
@@ -488,6 +520,7 @@ vec3 radiance(Ray ray) {
     return col;
 }
 
+
 void main() {
     // Initialize camera
     Camera camera = Camera_initFromViewMatrix(view, cameraPosition, cameraZoom, float(iResolution.x) / float(iResolution.y));
@@ -518,3 +551,39 @@ void main() {
     
     FragColor = vec4(col, 1.0);
 }
+
+/*
+void main() {
+    // Initialize camera
+    Camera camera = Camera_initFromViewMatrix(view, cameraPosition, cameraZoom, float(iResolution.x) / float(iResolution.y));
+    
+    // Initialize random state with better seed
+    randState = FragCoord.xy / iResolution.xy;
+    
+    // Stratified sampling - better distribution of samples
+    vec3 col = vec3(0.0);
+    int sqrt_ns = int(sqrt(float(numSamples)));
+    
+    // Use stratified sampling for better convergence
+    for (int j = 0; j < sqrt_ns; j++) {
+        for (int i = 0; i < sqrt_ns; i++) {
+            // Stratified sample position
+            float u = float(FragCoord.x + (float(i) + rand2D()) / float(sqrt_ns)) / float(iResolution.x);
+            float v = float(FragCoord.y + (float(j) + rand2D()) / float(sqrt_ns)) / float(iResolution.y);
+            
+            Ray r = Camera_getRay(camera, u, v);
+            col += radiance(r);
+        }
+    }
+    
+    // Average samples
+    col /= float(numSamples);
+    
+    // Tone mapping - improves visual quality and handles HDR
+    col = col / (col + vec3(1.0)); // Reinhard tone mapping
+    
+    // Gamma correction
+    col = pow(col, vec3(1.0/2.2));
+    
+    FragColor = vec4(col, 1.0);
+}*/

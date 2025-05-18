@@ -136,11 +136,15 @@ void Raytracer::setupBuffers() {
     shader->setInt("useOctree", 1);
     shader->setInt("octreeNodeCount", octree.flattenedTree.size());
     shader->setInt("sphereCount", spheres.size());
-    shader->setInt("maxDepth", MAXRAYSDEPTH);
     shader->setInt("numSamples", NUMSAMPLES);
+    shader->setInt("maxDepth", MAXRAYSDEPTH);
+
     glm::mat4 projection;
     projection = glm::perspective(glm::radians(45.0f), 800.0f / 600.0f, 0.1f, 100.0f);
     shader->setMat4("projection", projection); 
+
+    shader->setVec3("iResolution", SCR_WIDTH, SCR_HEIGHT, 0.0f); 
+    shader->setMat4("model", glm::mat4(1.0f));
 }
 
 void Raytracer::cleanupBuffers() {
@@ -153,9 +157,6 @@ void Raytracer::cleanupBuffers() {
     glDeleteBuffers(1, &objectIndicesSSBO);
 }
 
-/**
- * @brief Generate a vector of spheres with predefined properties.
- */
 vector<Sphere> Raytracer::generateSpheres() {
     std::vector<Sphere> spheres;
 
@@ -254,7 +255,6 @@ vector<Sphere> Raytracer::generateSpheres() {
     return spheres;
 }
 
-
 void Raytracer::run() {
     setupScene();
     setupBuffers();
@@ -276,19 +276,6 @@ void Raytracer::run() {
         shader->setMat4("view", view); 
         shader->setVec3("cameraPosition", camera.Position); 
         shader->setFloat("cameraZoom", camera.Zoom);  
-        shader->setVec3("iResolution", SCR_WIDTH, SCR_HEIGHT, 0.0f); 
-        shader->setFloat("iTime", glfwGetTime()); 
-        shader->setFloat("iTimeDelta", deltaTime);
-        shader->setFloat("iFrameRate", 1.0f / deltaTime);
-        shader->setInt("iFrame", static_cast<int>(currentFrame));
-        shader->setFloat("iChannelTime[0]", glfwGetTime()); 
-        shader->setVec3("iChannelResolution[0]", SCR_WIDTH, SCR_HEIGHT, 0.0f);
-        shader->setVec4("iMouse", 0.0f, 0.0f, 0.0f, 0.0f);
-        shader->setVec4("iDate", 0.0f, 0.0f, 0.0f, 0.0f); 
-        shader->setFloat("iSampleRate", 44100.0f); 
-
-        
-        shader->setMat4("model", glm::mat4(1.0f));
 
         raytracingQuad->bind();
         glDrawArrays(GL_TRIANGLES, 0, 6);

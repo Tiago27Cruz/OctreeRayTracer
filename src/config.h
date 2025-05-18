@@ -13,10 +13,10 @@ const int MAXSPHERESPERNODE = 4;
 const int DEBUGSPHERESPERNODE = 2;
 
 // Number of rays incoming from the camera; The more rays, the more accurate the result
-const int NUMSAMPLES = 8;
+const int NUMSAMPLES = 32;
 
 // How many times a ray can bounce before it is discarded
-const int MAXRAYSDEPTH = 4;
+const int MAXRAYSDEPTH = 5;
 
 // Screen resolution
 const unsigned int SCR_WIDTH = 800;

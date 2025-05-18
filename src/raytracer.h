@@ -45,6 +45,9 @@ class Raytracer {
         void setupScene();
         void setupBuffers();
         void cleanupBuffers();
+        /**
+         * @brief Generate a vector of spheres with predefined properties.
+        */
         vector<Sphere> generateSpheres();
 
 };

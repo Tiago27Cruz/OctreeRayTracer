@@ -524,7 +524,6 @@ vec3 radiance(Ray ray) {
 void main() {
     // Initialize camera
     Camera camera = Camera_initFromViewMatrix(view, cameraPosition, cameraZoom, float(iResolution.x) / float(iResolution.y));
-    
     // Initialize random state
     randState = FragCoord.xy / iResolution.xy;
     

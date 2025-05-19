@@ -28,6 +28,15 @@ This way, we ease the load of work on the GPU, making our app more efficient.
     } in settings.json
 4-install Cmake
 
+## APITrace 
+
+[Usage](https://github.com/apitrace/apitrace/blob/master/docs/USAGE.markdown)
+
+1. Change shaders to absolute paths ```shader = new Shader("D:/Universidade/Y4S2/EDAA/EDAA/shaders/vertex_shader.glsl", "D:/Universidade/Y4S2/EDAA/EDAA/ shaders/octree_fragment_shader.glsl");```
+2. Run ```./apitrace trace --api gl D:\Universidade\Y4S2\EDAA\EDAA\build\edaa.exe -v --output=OUTPUT```
+
+
+
 ## References
 
 - https://www.cs.swarthmore.edu/~jcarste1/pdfs/octree.pdf

@@ -344,7 +344,7 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
             
             // Process children in the optimal order (furthest to closest on stack)
             // This ensures we process closest nodes first when popping
-            for (int i = 0; i < 8; i++) {
+            for (int i = 7; i >= 0; i--) {
                 int octant = (i ^ octantMask);
                 int childIdx = childrenOffset + octant;
                 

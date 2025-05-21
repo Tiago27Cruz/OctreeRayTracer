@@ -38,7 +38,7 @@ layout(std430, binding = 4) buffer OctreeNode2Buffer {
 };
 
 layout(std430, binding = 5) buffer OctreeCountsBuffer {
-    int octreeNodeCounts[];
+    int octreeObjectCounts[];
 };
 
 layout(std430, binding = 6) buffer ObjectIndicesBuffer {
@@ -288,7 +288,7 @@ bool rayBoxIntersection(Ray ray, vec3 boxMin, vec3 boxMax, out float tmin, out f
 }
 
 bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
-    const int MAX_STACK = 64;
+    const int MAX_STACK = 200;
     int nodeStack[MAX_STACK];
     float tminStack[MAX_STACK];
     float tmaxStack[MAX_STACK];
@@ -303,7 +303,6 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     bool hit_anything = false;
     float closest_so_far = t_max;
 
-    
     while (stackPtr >= 0) {
         int nodeIdx = nodeStack[stackPtr];
         float node_tmin = tminStack[stackPtr];
@@ -319,7 +318,7 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
         vec3 nodeMax = node2.xyz;
         int childrenOffset = int(node1.w);
         int objectsOffset = int(node2.w);
-        int objectCount = octreeNodeCounts[nodeIdx];
+        int objectCount = octreeObjectCounts[nodeIdx];
         
         // Test for intersection
         float boxTMin, boxTMax;

@@ -1,6 +1,7 @@
 #include "raytracer.h"
 #include "config.h"
 #include <iostream>
+#include <chrono>
 
 // External camera and input handling
 extern Camera camera;
@@ -261,6 +262,7 @@ void Raytracer::run() {
 
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
+        const auto start2{std::chrono::steady_clock::now()};
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -283,6 +285,9 @@ void Raytracer::run() {
         // Swap buffers and poll events
         glfwSwapBuffers(window);
         glfwPollEvents();
+        const auto finish2{std::chrono::steady_clock::now()};
+        const std::chrono::duration<double> elapsed_seconds2{finish2 - start2};
+        cout << "Main loop time: " << elapsed_seconds2.count() << "s" << std::endl;
     }
 
     cleanupBuffers();

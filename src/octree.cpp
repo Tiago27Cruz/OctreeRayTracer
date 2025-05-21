@@ -2,6 +2,7 @@
 #include <glm/glm.hpp>
 #include <map>
 #include <queue>
+#include <chrono>
 
 OctreeNode::OctreeNode(const glm::vec3& min, const glm::vec3& max)
     : min(min), max(max), isLeaf(true), childrenOffset(-1), objectsOffset(-1), objectCount(0){
@@ -44,6 +45,8 @@ void Octree::cleanupNode(OctreeNode* node) {
 }
 
 void Octree::build(const std::vector<Sphere>& spheres, const int debug) {
+    const auto start{std::chrono::steady_clock::now()};
+
     if (spheres.empty()) {
         throw std::invalid_argument("Sphere list is empty");
     }
@@ -76,7 +79,18 @@ void Octree::build(const std::vector<Sphere>& spheres, const int debug) {
 
     subdivideNode(root, spheres, 0, debug);
 
+    const auto finish{std::chrono::steady_clock::now()};
+    const std::chrono::duration<double> elapsed_seconds{finish - start};
+    cout << "Total build time: " << elapsed_seconds.count() << "s" << std::endl;
+
+    const auto start2{std::chrono::steady_clock::now()};
+
     setGPUData();
+
+    const auto finish2{std::chrono::steady_clock::now()};
+    const std::chrono::duration<double> elapsed_seconds2{finish2 - start2};
+    cout << "Total GPU conversion time: " << elapsed_seconds2.count() << "s" << std::endl;
+
 }
 
 OctreeNode* createSubnodes(int index, OctreeNode* node, const glm::vec3& mid) {
@@ -213,7 +227,6 @@ void Octree::subdivideNode(OctreeNode* node, const std::vector<Sphere>& spheres,
     }
 }
 
-// TODO: Understand this lol
 bool Octree::sphereIntersectsBox(const Sphere& sphere, const glm::vec3& boxMin, const glm::vec3& boxMax) {
     glm::vec3 closest;
     

@@ -4,6 +4,7 @@
 #include "opengl/camera.h"
 #include "config.h"
 #include "raytracer.h"
+#include <chrono>
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image/stb_image.h"
 
@@ -29,10 +30,14 @@ int main() {
         camera.Position = glm::vec3(30.0f, 20.0f, -50.0f);
     }
     
+    const auto start{std::chrono::steady_clock::now()};
     Raytracer raytracer;
     if (!raytracer.initialize()) {
         return -1;
     }
+    const auto finish{std::chrono::steady_clock::now()};
+    const std::chrono::duration<double> elapsed_seconds{finish - start};
+    cout << "Total initialization time: " << elapsed_seconds.count() << "s" << std::endl;
     
     raytracer.run();
     

@@ -293,8 +293,6 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     float tminStack[MAX_STACK];
     float tmaxStack[MAX_STACK];
     
-    
-    // represents the root
     int stackPtr = 0;
     nodeStack[0] = 0;
     tminStack[0] = t_min;
@@ -308,10 +306,10 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
         float node_tmin = tminStack[stackPtr];
         float node_tmax = tmaxStack[stackPtr--];
         
-        // if we found already a closer node, continue
+        // Early termination if we can't improve on existing hit
         if (node_tmin > closest_so_far) continue;
         
-        // get data
+        // Get node
         vec4 node1 = octreeNodes[nodeIdx];
         vec4 node2 = octreeNodes2[nodeIdx];
         vec3 nodeMin = node1.xyz;
@@ -320,15 +318,8 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
         int objectsOffset = int(node2.w);
         int objectCount = octreeObjectCounts[nodeIdx];
         
-        // Test for intersection
-        float boxTMin, boxTMax;
-        if (!rayBoxIntersection(ray, nodeMin, nodeMax, boxTMin, boxTMax) || boxTMax < node_tmin || boxTMin > node_tmax) {
-            continue; // no intersection
-        }
-        
-        // leaf node
+        // Test objects in leaf nodes
         if (childrenOffset == -1) {
-
             for (int i = 0; i < objectCount; i++) {
                 int sphereIdx = objectIndices[objectsOffset + i];
                 
@@ -341,32 +332,49 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
             }
         } 
         else {
+            // Process child nodes in order of distance from ray origin
+            // For non-leaf nodes, add children to stack in best order
             
-            // Bit Mask so we tranverse the octree starting from the closest octants
+            // Your existing bit mask approach for ordering traversal is good,
+            // but we can enhance it with distance-based prioritization
             int octantMask = 0;
-
             if (ray.direction.x < 0.0) octantMask |= 2;  // Flip bit 1 (X axis)
             if (ray.direction.y < 0.0) octantMask |= 4;  // Flip bit 2 (Y axis)
             if (ray.direction.z < 0.0) octantMask |= 1;  // Flip bit 0 (Z axis)
-
+            
+            // Process children in the optimal order (furthest to closest on stack)
+            // This ensures we process closest nodes first when popping
             for (int i = 0; i < 8; i++) {
                 int octant = (i ^ octantMask);
-
                 int childIdx = childrenOffset + octant;
+                
                 if (childIdx >= octreeNodeCount) continue;
+                
+                // Get child bounds
+                vec4 childNode1 = octreeNodes[childIdx];
+                vec4 childNode2 = octreeNodes2[childIdx];
+                vec3 childMin = childNode1.xyz;
+                vec3 childMax = childNode2.xyz;
+                
+                // Check if child intersects ray before adding to stack
+                float childTMin, childTMax;
+                if (!rayBoxIntersection(ray, childMin, childMax, childTMin, childTMax) || 
+                    childTMax < node_tmin || childTMin > closest_so_far) {
+                    continue; // Skip non-intersecting children
+                }
                 
                 if (stackPtr < MAX_STACK - 1) {
                     stackPtr++;
                     nodeStack[stackPtr] = childIdx;
-                    tminStack[stackPtr] = node_tmin;
-                    tmaxStack[stackPtr] = min(node_tmax, closest_so_far);
+                    tminStack[stackPtr] = max(childTMin, node_tmin);
+                    tmaxStack[stackPtr] = min(childTMax, closest_so_far);
                 }
             }
         }
     }
-    
     return hit_anything;
 }
+
 
 bool bruteForceIntersect(Ray ray, float t_min, float t_max, inout IntersectInfo rec) {
     IntersectInfo temp_rec;

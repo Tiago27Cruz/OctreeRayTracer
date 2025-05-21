@@ -134,7 +134,7 @@ void Raytracer::setupBuffers() {
     glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 6, objectIndicesSSBO);
 
     shader->use();
-    shader->setInt("useOctree", 1);
+    shader->setInt("useOctree", USEOCTREE);
     shader->setInt("octreeNodeCount", octree.flattenedTree.size());
     shader->setInt("sphereCount", spheres.size());
     shader->setInt("numSamples", NUMSAMPLES);

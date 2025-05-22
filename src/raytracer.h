@@ -49,7 +49,8 @@ class Raytracer {
          * @brief Generate a vector of spheres with predefined properties.
         */
         vector<Sphere> generateSpheres();
-
+        vector<Sphere> generatePreBuiltSpheres();
+        vector<Sphere> generateRandomSpheres();
 };
 
 #endif // RAYTRACER_H

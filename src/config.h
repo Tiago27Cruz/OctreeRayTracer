@@ -3,18 +3,21 @@
 
 // Debug mode
 const int DEBUG = 0;
-const int USEOCTREE = 0;
+const int USEOCTREE = 1;
+
+const int USEPREBUILT = 0;
+const int NUMSPHERES = 500;
 
 // Maximum depth for the octree
-const int MAXDEPTH = 4;
+const int MAXDEPTH = 10;
 const int DEBUGDEPTH = 3;
 
 // Maximum number of spheres per node in the octree
-const int MAXSPHERESPERNODE = 10;
+const int MAXSPHERESPERNODE = 1;
 const int DEBUGSPHERESPERNODE = 2;
 
 // Number of rays incoming from the camera; The more rays, the more accurate the result
-const int NUMSAMPLES = 4;
+const int NUMSAMPLES = 32;
 
 // How many times a ray can bounce before it is discarded
 const int MAXRAYSDEPTH = 4;

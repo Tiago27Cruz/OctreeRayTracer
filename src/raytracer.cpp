@@ -2,6 +2,7 @@
 #include "config.h"
 #include <iostream>
 #include <chrono>
+#include <random>
 
 // External camera and input handling
 extern Camera camera;
@@ -158,16 +159,8 @@ void Raytracer::cleanupBuffers() {
     glDeleteBuffers(1, &objectIndicesSSBO);
 }
 
-vector<Sphere> Raytracer::generateSpheres() {
+vector<Sphere> Raytracer::generatePreBuiltSpheres(){
     std::vector<Sphere> spheres;
-
-    if (DEBUG) {
-        spheres.push_back(Sphere(vec3( -10.000000, -10.000000, -10.000000), 3.000000, 0, vec3( 0.596282, 0.140784, 0.017972), 1.000000, 1.000000)); // (-13, -13, -13) to (-7, -7, -7)
-        spheres.push_back(Sphere(vec3( 10.000000, 10.000000, 10.000000), 3.000000, 0,vec3( 0.952200, 0.391551, 0.915972), 1.000000, 1.000000)); // (7, 7, 7) to (13, 13, 13)
-        spheres.push_back(Sphere(vec3( -10.000000, 10.000000, -10.000000), 3.000000, 0, vec3( 0.002612, 0.598319, 0.435378), 1.000000, 1.000000)); // (-13, 7, -13) to (-7, 13, -7)
-        return spheres;
-    }
-
     //spheres.push_back(Sphere(vec3( 0.000000, -1001.000000, 0.000000), 1000.000000, 0, vec3( 0.500000, 0.500000, 0.500000), 1.000000, 1.000000));
     spheres.push_back(Sphere(vec3( -7.995381, 0.200000, -7.478668), 0.200000, 0, vec3( 0.380012, 0.506085, 0.762437), 1.000000, 1.000000));
     spheres.push_back(Sphere(vec3( -7.696819, 0.200000, -5.468978), 0.200000, 0, vec3( 0.596282, 0.140784, 0.017972), 1.000000, 1.000000));
@@ -254,6 +247,84 @@ vector<Sphere> Raytracer::generateSpheres() {
     spheres.push_back(Sphere(vec3( 4.000000, 1.000000, 0.000000), 1.000000, 1, vec3( 0.700000, 0.600000, 0.500000), 0.000000, 1.000000));
 
     return spheres;
+}
+
+vector<Sphere> Raytracer::generateRandomSpheres() {
+    std::vector<Sphere> spheres;
+    std::random_device rd;
+    std::mt19937 gen(rd());
+    
+    // Material type and property distributions
+    std::uniform_int_distribution<int> materialTypeDis(0, 2);
+    std::uniform_real_distribution<float> colorDis(0.0f, 1.0f);
+    std::uniform_real_distribution<float> fuzzDis(0.0f, 0.5f);
+    std::uniform_real_distribution<float> refIndexDis(1.3f, 1.7f);
+    std::uniform_real_distribution<float> smallJitter(-0.2f, 0.2f);
+    
+    // Grid parameters
+    const float worldSize = 40.0f; // -10 to 10 on each axis
+    const float radius = 0.2f; // Default sphere radius
+    const float minSpacing = radius * 2.5f; // Minimum space between spheres to avoid intersection
+    
+    // Calculate grid dimensions based on number of spheres
+    int gridSize = static_cast<int>(std::ceil(std::sqrt(NUMSPHERES)));
+    float cellSize = worldSize / gridSize;
+    
+    // Ensure cells are big enough for spheres with spacing
+    if (cellSize < minSpacing) {
+        cellSize = minSpacing;
+    }
+    
+    // Generate spheres in a grid pattern with small random offsets
+    int count = 0;
+    for (int i = 0; i < gridSize && count < NUMSPHERES; i++) {
+        for (int j = 0; j < gridSize && count < NUMSPHERES; j++) {
+            // Calculate base position in the grid
+            float baseX = -10.0f + (i + 0.5f) * cellSize;
+            float baseZ = -10.0f + (j + 0.5f) * cellSize;
+            
+            // Add small random jitter within the cell to make it look less uniform
+            // but still maintain non-intersection
+            float jitterAmount = std::min(cellSize * 0.3f, minSpacing * 0.4f);
+            float offsetX = smallJitter(gen) * jitterAmount;
+            float offsetZ = smallJitter(gen) * jitterAmount;
+            
+            // Final position
+            vec3 center(baseX + offsetX, 0.0f, baseZ + offsetZ);
+            
+            // Generate material properties
+            int materialType = 0;
+            vec3 albedo(colorDis(gen), colorDis(gen), colorDis(gen));
+            float fuzz = (materialType == 1) ? fuzzDis(gen) : 0.0f;
+            float refractionIndex = (materialType == 2) ? refIndexDis(gen) : 1.0f;
+            
+            // Add the sphere
+            spheres.push_back(Sphere(center, radius, materialType, albedo, fuzz, refractionIndex));
+            count++;
+        }
+    }
+    
+    return spheres;
+}
+
+vector<Sphere> Raytracer::generateSpheres() {
+    std::vector<Sphere> spheres;
+
+    if (DEBUG) {
+        spheres.push_back(Sphere(vec3( -10.000000, -10.000000, -10.000000), 3.000000, 0, vec3( 0.596282, 0.140784, 0.017972), 1.000000, 1.000000)); // (-13, -13, -13) to (-7, -7, -7)
+        spheres.push_back(Sphere(vec3( 10.000000, 10.000000, 10.000000), 3.000000, 0,vec3( 0.952200, 0.391551, 0.915972), 1.000000, 1.000000)); // (7, 7, 7) to (13, 13, 13)
+        spheres.push_back(Sphere(vec3( -10.000000, 10.000000, -10.000000), 3.000000, 0, vec3( 0.002612, 0.598319, 0.435378), 1.000000, 1.000000)); // (-13, 7, -13) to (-7, 13, -7)
+        return spheres;
+    }
+
+    if (USEPREBUILT) {
+        spheres = generatePreBuiltSpheres();
+    } else {
+        spheres = generateRandomSpheres();
+    }
+
+    return spheres;
+    
 }
 
 void Raytracer::run() {

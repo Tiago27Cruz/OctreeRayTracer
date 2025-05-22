@@ -8,14 +8,14 @@
 using namespace std;
 
 enum OctantPosition {
-    // Binary: yxz (0=min, 1=max for each dimension)
+    // Binary: zxy (0=min, 1=max for each dimension)
     BottomLeftBack   = 0,  // 000: (min.x, min.y, min.z)
-    BottomLeftFront  = 1,  // 001: (min.x, min.y, max.z)
+    BottomLeftFront  = 1,  // 001: (min.x, max.y, min.z)
     BottomRightBack  = 2,  // 010: (max.x, min.y, min.z)
-    BottomRightFront = 3,  // 011: (max.x, min.y, max.z)
-    TopLeftBack      = 4,  // 100: (min.x, max.y, min.z)
+    BottomRightFront = 3,  // 011: (max.x, max.y, min.z)
+    TopLeftBack      = 4,  // 100: (min.x, min.y, max.z)
     TopLeftFront     = 5,  // 101: (min.x, max.y, max.z)
-    TopRightBack     = 6,  // 110: (max.x, max.y, min.z)
+    TopRightBack     = 6,  // 110: (max.x, min.y, max.z)
     TopRightFront    = 7   // 111: (max.x, max.y, max.z)
 };
 

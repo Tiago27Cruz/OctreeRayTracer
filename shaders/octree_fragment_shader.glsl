@@ -359,7 +359,8 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
                 // Check if child intersects ray before adding to stack
                 float childTMin, childTMax;
                 if (!rayBoxIntersection(ray, childMin, childMax, childTMin, childTMax) || 
-                    childTMax < node_tmin || childTMin > closest_so_far) {
+                    childTMax < node_tmin || childTMin > closest_so_far ||
+                    (childNode1.w == -1 &&  childNode2.w == -1)) {
                     continue; // Skip non-intersecting children
                 }
                 

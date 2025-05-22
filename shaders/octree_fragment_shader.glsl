@@ -301,19 +301,24 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
     bool hit_anything = false;
     float closest_so_far = t_max;
 
+    vec4 node1 = octreeNodes[0];
+    vec4 node2 = octreeNodes2[0];
+    vec3 nodeMin = node1.xyz;
+    vec3 nodeMax = node2.xyz;
+    float childTMin, childTMax;
+    if (!rayBoxIntersection(ray, nodeMin, nodeMax, childTMin, childTMax)){
+        return false;
+    }
     while (stackPtr >= 0) {
         int nodeIdx = nodeStack[stackPtr];
         float node_tmin = tminStack[stackPtr];
         float node_tmax = tmaxStack[stackPtr--];
         
-        // Early termination if we can't improve on existing hit
-        if (node_tmin > closest_so_far) continue;
-        
         // Get node
-        vec4 node1 = octreeNodes[nodeIdx];
-        vec4 node2 = octreeNodes2[nodeIdx];
-        vec3 nodeMin = node1.xyz;
-        vec3 nodeMax = node2.xyz;
+        node1 = octreeNodes[nodeIdx];
+        node2 = octreeNodes2[nodeIdx];
+        nodeMin = node1.xyz;
+        nodeMax = node2.xyz;
         int childrenOffset = int(node1.w);
         int objectsOffset = int(node2.w);
         int objectCount = octreeObjectCounts[nodeIdx];
@@ -321,13 +326,14 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
         // Test objects in leaf nodes
         if (childrenOffset == -1) {
             for (int i = 0; i < objectCount; i++) {
-                int sphereIdx = objectIndices[objectsOffset + i];
+                //int sphereIdx = objectIndices[objectsOffset + i];
                 
                 IntersectInfo temp_rec;
-                if (Sphere_hit(sphereIdx, ray, node_tmin, closest_so_far, temp_rec)) {
+                if (Sphere_hit(objectIndices[objectsOffset + i], ray, node_tmin, closest_so_far, temp_rec)) {
                     hit_anything = true;
                     closest_so_far = temp_rec.t;
                     rec = temp_rec;
+                    stackPtr = -1; // Exit the loop early if we hit something
                 }
             }
         } 
@@ -338,9 +344,9 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
             // Your existing bit mask approach for ordering traversal is good,
             // but we can enhance it with distance-based prioritization
             int octantMask = 0;
-            if (ray.direction.x < 0.0) octantMask |= 2;  // Flip bit 1 (X axis)
-            if (ray.direction.y < 0.0) octantMask |= 4;  // Flip bit 2 (Y axis)
-            if (ray.direction.z < 0.0) octantMask |= 1;  // Flip bit 0 (Z axis)
+            if (ray.direction.x < 0.0) octantMask |= 2;  
+            if (ray.direction.y < 0.0) octantMask |= 1;  
+            if (ray.direction.z < 0.0) octantMask |= 4; 
             
             // Process children in the optimal order (furthest to closest on stack)
             // This ensures we process closest nodes first when popping
@@ -357,7 +363,6 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
                 vec3 childMax = childNode2.xyz;
                 
                 // Check if child intersects ray before adding to stack
-                float childTMin, childTMax;
                 if (!rayBoxIntersection(ray, childMin, childMax, childTMin, childTMax) || 
                     childTMax < node_tmin || childTMin > closest_so_far ||
                     (childNode1.w == -1 &&  childNode2.w == -1)) {

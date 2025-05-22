@@ -3,7 +3,7 @@
 
 // Debug mode
 const int DEBUG = 0;
-const int USEOCTREE = 1;
+const int USEOCTREE = 0;
 
 const int USEPREBUILT = 0;
 const int NUMSPHERES = 500;
@@ -25,5 +25,7 @@ const int MAXRAYSDEPTH = 4;
 // Screen resolution
 const unsigned int SCR_WIDTH = 800;
 const unsigned int SCR_HEIGHT = 600;
+
+const bool COLLECTSTATS = 1;
 
 #endif // CONFIG_H

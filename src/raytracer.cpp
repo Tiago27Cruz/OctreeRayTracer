@@ -3,6 +3,8 @@
 #include <iostream>
 #include <chrono>
 #include <random>
+#include <fstream>
+
 
 // External camera and input handling
 extern Camera camera;
@@ -18,7 +20,7 @@ Raytracer::Raytracer()
     : width(SCR_WIDTH), height(SCR_HEIGHT), window(nullptr),
     spheresSSBO(0), sphereDataSSBO(0), sphereData2SSBO(0),
     octreeNodesSSBO(0), octreeNodes2SSBO(0), octreeCountsSSBO(0), objectIndicesSSBO(0),
-    raytracingQuad(nullptr), shader(nullptr) {
+    raytracingQuad(nullptr), shader(nullptr), frameCount(0), statsFilename("stats.csv") {
 }
 
 Raytracer::~Raytracer() {
@@ -327,6 +329,40 @@ vector<Sphere> Raytracer::generateSpheres() {
     
 }
 
+void const Raytracer::saveStats(){
+    if (renderTimes.empty()) {
+        cout << "No render times recorded." << endl;
+        return;
+    }
+
+    std::ofstream outFile;
+    outFile.open(statsFilename, std::ios::out | std::ios::app);
+    if (!outFile || !outFile.is_open()) {
+        std::cerr << "Error opening file for writing: " << statsFilename << std::endl;
+        return;
+    }
+
+    double total = 0.0;
+    double min = 9999;
+    double max = 0;
+
+    for (const double time : renderTimes) {
+        total += time;
+        min = std::min(min, time);
+        max = std::max(max, time);
+    }
+
+    double avg = total / renderTimes.size();
+
+    outFile << USEOCTREE << "; " << NUMSPHERES << "; " << MAXRAYSDEPTH << "; " << NUMSAMPLES << "; " << MAXRAYSDEPTH << "; " 
+            << SCR_WIDTH << "; " << SCR_HEIGHT << "; " 
+            << min << "; " << max << "; " 
+            << avg << "; " << renderTimes.size()
+            << std::endl;
+
+    outFile.close();
+}
+
 void Raytracer::run() {
     setupScene();
     setupBuffers();
@@ -359,6 +395,20 @@ void Raytracer::run() {
         const auto finish2{std::chrono::steady_clock::now()};
         const std::chrono::duration<double> elapsed_seconds2{finish2 - start2};
         cout << "Main loop time: " << elapsed_seconds2.count() << "s" << std::endl;
+
+        if (COLLECTSTATS) {
+            if(elapsed_seconds2.count() < 0.003) continue;
+            renderTimes.push_back(elapsed_seconds2.count());
+            frameCount++;
+            if(frameCount >= 100) {
+                frameCount = 100;
+                break;
+            }
+        }
+    }
+
+    if (COLLECTSTATS) {
+        saveStats();
     }
 
     cleanupBuffers();

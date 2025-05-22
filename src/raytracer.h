@@ -51,6 +51,12 @@ class Raytracer {
         vector<Sphere> generateSpheres();
         vector<Sphere> generatePreBuiltSpheres();
         vector<Sphere> generateRandomSpheres();
+
+        std::string statsFilename;
+        int frameCount;
+        std::vector<double> renderTimes;
+
+        void const saveStats();
 };
 
 #endif // RAYTRACER_H

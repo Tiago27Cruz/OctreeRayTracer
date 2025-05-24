@@ -144,7 +144,7 @@ def run_experiments():
     all_experiments = []
     
     # 1. Experiments without octree
-    """for num_spheres, samples, ray_depth, resolution in common_combinations:
+    for num_spheres, samples, ray_depth, resolution in common_combinations:
         experiment = base_params.copy()
         experiment.update({
             'USEOCTREE': 0,
@@ -155,7 +155,7 @@ def run_experiments():
             'MAXDEPTH': -1,
         })
         experiment.update(resolution)
-        all_experiments.append(experiment)"""
+        all_experiments.append(experiment)
     
     # 2. Experiments with octree and varying octree parameters
     for num_spheres, samples, ray_depth, resolution in common_combinations:

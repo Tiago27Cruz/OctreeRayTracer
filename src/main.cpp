@@ -30,7 +30,7 @@ int main() {
         std::cout << "Debug mode enabled" << std::endl;
         camera.Position = glm::vec3(30.0f, 20.0f, -50.0f);
     } else {
-        camera.Position = glm::vec3(0.0f, 2.5f, -10.0f);
+        camera.Position = glm::vec3(0.0f, 2.5f, 0.0f);
         //camera.Front = glm::normalize(glm::vec3(0.0f, 0.2f, -1.0f)); // Looking slightly downward
         //camera.WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
         //camera.Yaw = -90.0f; // Keep standard forward direction

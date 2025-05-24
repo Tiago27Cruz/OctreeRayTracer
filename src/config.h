@@ -6,10 +6,10 @@ const int DEBUG = 0;
 const int USEOCTREE = 1;
 
 const int USEPREBUILT = 0;
-const int NUMSPHERES = 1000;
+const int NUMSPHERES = 2000;
 
 // Maximum depth for the octree
-const int MAXDEPTH = 10;
+const int MAXDEPTH = 4000;
 const int DEBUGDEPTH = 3;
 
 // Maximum number of spheres per node in the octree
@@ -17,14 +17,14 @@ const int MAXSPHERESPERNODE = 1;
 const int DEBUGSPHERESPERNODE = 2;
 
 // Number of rays incoming from the camera; The more rays, the more accurate the result
-const int NUMSAMPLES = 32;
+const int NUMSAMPLES = 4;
 
 // How many times a ray can bounce before it is discarded
-const int MAXRAYSDEPTH = 16;
+const int MAXRAYSDEPTH = 4;
 
 // Screen resolution
-const unsigned int SCR_WIDTH = 1920;
-const unsigned int SCR_HEIGHT = 1080;
+const unsigned int SCR_WIDTH = 800;
+const unsigned int SCR_HEIGHT = 600;
 
 const bool COLLECTSTATS = 1;
 

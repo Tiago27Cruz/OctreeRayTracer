@@ -3,10 +3,10 @@
 
 // Debug mode
 const int DEBUG = 0;
-const int USEOCTREE = 0;
+const int USEOCTREE = 1;
 
 const int USEPREBUILT = 0;
-const int NUMSPHERES = 500;
+const int NUMSPHERES = 1000;
 
 // Maximum depth for the octree
 const int MAXDEPTH = 10;
@@ -20,11 +20,11 @@ const int DEBUGSPHERESPERNODE = 2;
 const int NUMSAMPLES = 32;
 
 // How many times a ray can bounce before it is discarded
-const int MAXRAYSDEPTH = 4;
+const int MAXRAYSDEPTH = 16;
 
 // Screen resolution
-const unsigned int SCR_WIDTH = 800;
-const unsigned int SCR_HEIGHT = 600;
+const unsigned int SCR_WIDTH = 1920;
+const unsigned int SCR_HEIGHT = 1080;
 
 const bool COLLECTSTATS = 1;
 

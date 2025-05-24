@@ -4,7 +4,7 @@
 #include <chrono>
 #include <random>
 #include <fstream>
-
+#include <thread>
 
 // External camera and input handling
 extern Camera camera;
@@ -262,28 +262,42 @@ vector<Sphere> Raytracer::generateRandomSpheres() {
     std::uniform_real_distribution<float> fuzzDis(0.0f, 0.5f);
     std::uniform_real_distribution<float> refIndexDis(1.3f, 1.7f);
     std::uniform_real_distribution<float> smallJitter(-0.2f, 0.2f);
+    std::uniform_real_distribution<float> heightDis(0.0f, 4.0f);
     
     // Grid parameters
-    const float worldSize = 40.0f; // -10 to 10 on each axis
     const float radius = 0.2f; // Default sphere radius
     const float minSpacing = radius * 2.5f; // Minimum space between spheres to avoid intersection
     
     // Calculate grid dimensions based on number of spheres
     int gridSize = static_cast<int>(std::ceil(std::sqrt(NUMSPHERES)));
+    
+    float worldSize = gridSize * minSpacing * 1.2f;
+    worldSize = std::min(worldSize, 100.0f);
+    
+    float halfWorld = worldSize / 2.0f;
+
+
     float cellSize = worldSize / gridSize;
     
     // Ensure cells are big enough for spheres with spacing
     if (cellSize < minSpacing) {
         cellSize = minSpacing;
     }
+
+    const int totalSpheres = NUMSPHERES;
+    const int metalCount = totalSpheres / 5;     // 20% metallic
+    const int glassCount = totalSpheres / 5;     // 20% glass
+    int metalRemaining = metalCount;
+    int glassRemaining = glassCount;
+    int diffuseRemaining = totalSpheres - metalCount - glassCount;
     
     // Generate spheres in a grid pattern with small random offsets
     int count = 0;
     for (int i = 0; i < gridSize && count < NUMSPHERES; i++) {
         for (int j = 0; j < gridSize && count < NUMSPHERES; j++) {
-            // Calculate base position in the grid
-            float baseX = -10.0f + (i + 0.5f) * cellSize;
-            float baseZ = -10.0f + (j + 0.5f) * cellSize;
+            float baseX = -halfWorld + (i + 0.5f) * cellSize;
+            float baseY = radius + (heightDis(gen) * (i % 3 + j % 3 + 1) / 5.0f);
+            float baseZ = -halfWorld + (j + 0.5f) * cellSize;
             
             // Add small random jitter within the cell to make it look less uniform
             // but still maintain non-intersection
@@ -292,14 +306,27 @@ vector<Sphere> Raytracer::generateRandomSpheres() {
             float offsetZ = smallJitter(gen) * jitterAmount;
             
             // Final position
-            vec3 center(baseX + offsetX, 0.0f, baseZ + offsetZ);
+            vec3 center(baseX + offsetX, baseY, baseZ + offsetZ);
             
             // Generate material properties
-            int materialType = 0;
+            // Choose material type based on remaining counts
+            int materialType = 0; // default to diffuse
+            
+            // Strategic distribution - ensure we have enough of each type
+            if (metalRemaining > 0 && (diffuseRemaining <= 0 || (count % 5 == 1))) {
+                materialType = 1; // metal
+                metalRemaining--;
+            } else if (glassRemaining > 0 && (diffuseRemaining <= 0 || (count % 5 == 3))) {
+                materialType = 2; // glass
+                glassRemaining--;
+            } else {
+                materialType = 0; // diffuse
+                diffuseRemaining--;
+            }
             vec3 albedo(colorDis(gen), colorDis(gen), colorDis(gen));
             float fuzz = (materialType == 1) ? fuzzDis(gen) : 0.0f;
             float refractionIndex = (materialType == 2) ? refIndexDis(gen) : 1.0f;
-            
+
             // Add the sphere
             spheres.push_back(Sphere(center, radius, materialType, albedo, fuzz, refractionIndex));
             count++;
@@ -342,22 +369,79 @@ void const Raytracer::saveStats(){
         return;
     }
 
+    // Make a copy for outlier detection
+    std::vector<double> filteredTimes = renderTimes;
+    
+    // Calculate initial statistics
+    double sum = 0.0;
+    for (double time : filteredTimes) {
+        sum += time;
+    }
+    double mean = sum / filteredTimes.size();
+    
+    // Calculate standard deviation
+    double variance = 0.0;
+    for (double time : filteredTimes) {
+        variance += (time - mean) * (time - mean);
+    }
+    double stdDev = std::sqrt(variance / filteredTimes.size());
+    
+    const double THRESHOLD = 2.5;
+    std::vector<double> cleanTimes;
+    int outlierCount = 0;
+    
+    for (double time : filteredTimes) {
+        // Calculate Z-score (how many standard deviations from mean)
+        double zScore = std::abs(time - mean) / stdDev;
+        if (zScore <= THRESHOLD) {
+            cleanTimes.push_back(time);
+        } else {
+            outlierCount++;
+            std::cout << "Outlier detected: " << time << "s (z-score: " << zScore << ")" << std::endl;
+        }
+    }
+    
+    // Report on outliers removed
+    if (outlierCount > 0) {
+        std::cout << "Removed " << outlierCount << " outliers from " << filteredTimes.size() << " samples" << std::endl;
+    }
+    
+    // Use clean data for final statistics
     double total = 0.0;
-    double min = 9999;
-    double max = 0;
+    double min = cleanTimes.empty() ? 9999 : cleanTimes[0];
+    double max = cleanTimes.empty() ? 0 : cleanTimes[0];
+    double fpsTotal = 0.0;
 
-    for (const double time : renderTimes) {
+    for (const double time : cleanTimes) {
         total += time;
         min = std::min(min, time);
         max = std::max(max, time);
+        fpsTotal += (1.0 / time);
     }
 
-    double avg = total / renderTimes.size();
+    // If we filtered out all values (shouldn't happen with threshold=2), fallback to original
+    if (cleanTimes.empty()) {
+        std::cerr << "Warning: All samples were outliers! Using original data." << std::endl;
+        cleanTimes = filteredTimes;
+        total = sum;
+        
+        // Recalculate min/max/fps
+        for (const double time : cleanTimes) {
+            min = std::min(min, time);
+            max = std::max(max, time);
+            fpsTotal += (1.0 / time);
+        }
+    }
 
-    outFile << USEOCTREE << "; " << NUMSPHERES << "; " << MAXRAYSDEPTH << "; " << NUMSAMPLES << "; " << MAXRAYSDEPTH << "; " 
+    double avg = total / cleanTimes.size();
+    double fpsAvg = fpsTotal / cleanTimes.size();
+    double minFPS = 1.0 / max;
+    double maxFPS = 1.0 / min;
+
+    outFile << USEOCTREE << "; " << NUMSPHERES << "; " << MAXDEPTH << "; " << NUMSAMPLES << "; " << MAXRAYSDEPTH << "; " 
             << SCR_WIDTH << "; " << SCR_HEIGHT << "; " 
-            << min << "; " << max << "; " 
-            << avg << "; " << renderTimes.size()
+            << min << "; " << max << "; " << avg << "; " 
+            << minFPS << "; " << maxFPS << "; " << fpsAvg
             << std::endl;
 
     outFile.close();
@@ -367,9 +451,10 @@ void Raytracer::run() {
     setupScene();
     setupBuffers();
 
+    const double targetFrameTime = 1.0 / 60.0;
     // Main render loop
     while (!glfwWindowShouldClose(window)) {
-        const auto start2{std::chrono::steady_clock::now()};
+        const auto frameStart{std::chrono::steady_clock::now()};
         float currentFrame = static_cast<float>(glfwGetTime());
         deltaTime = currentFrame - lastFrame;
         lastFrame = currentFrame;
@@ -392,16 +477,18 @@ void Raytracer::run() {
         // Swap buffers and poll events
         glfwSwapBuffers(window);
         glfwPollEvents();
-        const auto finish2{std::chrono::steady_clock::now()};
-        const std::chrono::duration<double> elapsed_seconds2{finish2 - start2};
-        cout << "Main loop time: " << elapsed_seconds2.count() << "s" << std::endl;
+
+        const auto frameEnd{std::chrono::steady_clock::now()};
+        const std::chrono::duration<double> elapsed_seconds{frameEnd - frameStart};
+        double frameTime = elapsed_seconds.count();
+        //cout << "Main loop time: " << elapsed_seconds2.count() << "s" << std::endl;
+         
+        //cout << "Frame time: " << frameTime << "s (" << 1.0/frameTime << " FPS)" << std::endl;
 
         if (COLLECTSTATS) {
-            if(elapsed_seconds2.count() < 0.003) continue;
-            renderTimes.push_back(elapsed_seconds2.count());
+            renderTimes.push_back(frameTime);
             frameCount++;
-            if(frameCount >= 100) {
-                frameCount = 100;
+            if(frameCount >= 50) {
                 break;
             }
         }

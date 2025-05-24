@@ -15,7 +15,8 @@ void scroll_callback(GLFWwindow* window, double xoffset, double yoffset);
 void processInput(GLFWwindow *window);
 
 // camera
-Camera camera(glm::vec3(0.0f, 5.0f, -10.0f));
+Camera camera(glm::vec3(0.0f, 8.0f, 30.0f));
+
 float lastX = SCR_WIDTH / 2.0f;
 float lastY = SCR_HEIGHT / 2.0f;
 bool firstMouse = true;
@@ -28,6 +29,13 @@ int main() {
     if (DEBUG) {
         std::cout << "Debug mode enabled" << std::endl;
         camera.Position = glm::vec3(30.0f, 20.0f, -50.0f);
+    } else {
+        camera.Position = glm::vec3(0.0f, 2.5f, -10.0f);
+        //camera.Front = glm::normalize(glm::vec3(0.0f, 0.2f, -1.0f)); // Looking slightly downward
+        //camera.WorldUp = glm::vec3(0.0f, 1.0f, 0.0f);
+        //camera.Yaw = -90.0f; // Keep standard forward direction
+        //camera.Pitch = -85.0f; // Increased downward angle (was -35°)
+        camera.updateCameraVectors();
     }
     
     const auto start{std::chrono::steady_clock::now()};

@@ -1,4 +1,4 @@
-Uses Octree; Spheres; Max Octree Depth; Num Samples; Max Rays Depth; Screen Width; Screen Height; Min; Max; Avg; Min FPS; Max FPS; Avg FPS
+Uses Octree;Spheres;Max Octree Depth;Num Samples;Max Rays Depth;Screen Width;Screen Height;Min;Max;Avg;Min FPS;Max FPS;Avg FPS
 0; 10; -1; 4; 4; 800; 600; 0.0046502; 0.0065343; 0.00584006; 153.039; 215.045; 171.328
 0; 10; -1; 4; 4; 1920; 1080; 0.004412; 0.0068155; 0.00586899; 146.724; 226.655; 170.485
 0; 10; -1; 4; 8; 800; 600; 0.004367; 0.0070598; 0.0058539; 141.647; 228.99; 170.958

@@ -116,18 +116,17 @@ def run_experiments():
     
     # Define sphere counts to test
     sphere_counts = [10, 100, 250, 500, 1000]
-    
-    # Define ray tracing parameters
-    ray_params = {
-        'NUMSAMPLES': [4, 16, 32],
-        'MAXRAYSDEPTH': [4, 8, 16],
-    }
+
+    quality_levels = [
+        {'NUMSAMPLES': 4, 'MAXRAYSDEPTH': 4},
+        {'NUMSAMPLES': 16, 'MAXRAYSDEPTH': 8},
+        {'NUMSAMPLES': 32, 'MAXRAYSDEPTH': 16}
+    ]
     
     # Common parameters for both with and without octree
     common_combinations = list(product(
         sphere_counts,
-        ray_params['NUMSAMPLES'],
-        ray_params['MAXRAYSDEPTH'],
+        quality_levels,
         resolutions
     ))
     
@@ -144,31 +143,28 @@ def run_experiments():
     all_experiments = []
     
     # 1. Experiments without octree
-    for num_spheres, samples, ray_depth, resolution in common_combinations:
+    for num_spheres, quality, resolution in common_combinations:
         experiment = base_params.copy()
         experiment.update({
             'USEOCTREE': 0,
             'NUMSPHERES': num_spheres,
-            'NUMSAMPLES': samples,
-            'MAXRAYSDEPTH': ray_depth,
-            # Fixed values for non-octree runs
             'MAXDEPTH': -1,
         })
         experiment.update(resolution)
+        experiment.update(quality)
         all_experiments.append(experiment)
     
     # 2. Experiments with octree and varying octree parameters
-    for num_spheres, samples, ray_depth, resolution in common_combinations:
+    for num_spheres, quality, resolution in common_combinations:
         for max_depth in octree_combinations:
             experiment = base_params.copy()
             experiment.update({
                 'USEOCTREE': 1,
                 'NUMSPHERES': num_spheres,
-                'NUMSAMPLES': samples,
-                'MAXRAYSDEPTH': ray_depth,
                 'MAXDEPTH': max_depth
             })
             experiment.update(resolution)
+            experiment.update(quality)
             all_experiments.append(experiment)
     
     print(f"Running {len(all_experiments)} parameter combinations")

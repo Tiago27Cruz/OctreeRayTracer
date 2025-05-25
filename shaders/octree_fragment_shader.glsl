@@ -338,20 +338,57 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
             }
         } 
         else {
-            // Process child nodes in order of distance from ray origin
-            // For non-leaf nodes, add children to stack in best order
-            
-            // Your existing bit mask approach for ordering traversal is good,
-            // but we can enhance it with distance-based prioritization
-            int octantMask = 0;
-            if (ray.direction.x < 0.0) octantMask |= 2;  
-            if (ray.direction.y < 0.0) octantMask |= 1;  
-            if (ray.direction.z < 0.0) octantMask |= 4; 
+            int traversalOrder[8];
+            int orderIndex = 0;
+
+            switch (ray.direction){
+                case vec3(1.0, 0.0, 0.0):
+                    traversalOrder[orderIndex++] = 0;
+                    traversalOrder[orderIndex++] = 1;
+                    traversalOrder[orderIndex++] = 4;
+                    traversalOrder[orderIndex++] = 5;
+                    traversalOrder[orderIndex++] = 2;
+                    traversalOrder[orderIndex++] = 3;
+                    traversalOrder[orderIndex++] = 6;
+                    traversalOrder[orderIndex++] = 7;
+                    break;
+                case vec3(-1.0, 0.0, 0.0):
+                    traversalOrder[orderIndex++] = 2; 
+                    traversalOrder[orderIndex++] = 3; 
+                    traversalOrder[orderIndex++] = 6; 
+                    traversalOrder[orderIndex++] = 7; 
+                    traversalOrder[orderIndex++] = 0; 
+                    traversalOrder[orderIndex++] = 1; 
+                    traversalOrder[orderIndex++] = 4; 
+                    traversalOrder[orderIndex++] = 5; 
+                    break;
+                case vec3(1.0, 1.0, 0.0):
+                    traversalOrder[orderIndex++] = 0; 
+                    traversalOrder[orderIndex++] = 4; 
+                    traversalOrder[orderIndex++] = 1; 
+                    traversalOrder[orderIndex++] = 5; 
+                    traversalOrder[orderIndex++] = 2; 
+                    traversalOrder[orderIndex++] = 6; 
+                    traversalOrder[orderIndex++] = 3; 
+                    traversalOrder[orderIndex++] = 7; 
+                    break;
+                case vec3(1.0, -1.0, 0.0):
+                    traversalOrder[orderIndex++] = 2; 
+                    traversalOrder[orderIndex++] = 6; 
+                    traversalOrder[orderIndex++] = 3; 
+                    traversalOrder[orderIndex++] = 7; 
+                    traversalOrder[orderIndex++] = 0; 
+                    traversalOrder[orderIndex++] = 4; 
+                    traversalOrder[orderIndex++] = 1; 
+                    traversalOrder[orderIndex++] = 5; 
+                    break;
+            }
+
             
             // Process children in the optimal order (furthest to closest on stack)
             // This ensures we process closest nodes first when popping
             for (int i = 7; i >= 0; i--) {
-                int octant = (i ^ octantMask);
+                int octant = traversalOrder[i];
                 int childIdx = childrenOffset + octant;
                 
                 if (childIdx >= octreeNodeCount) continue;

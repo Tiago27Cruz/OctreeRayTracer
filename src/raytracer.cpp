@@ -489,7 +489,7 @@ void Raytracer::run() {
             renderTimes.push_back(frameTime);
             frameCount++;
             if(frameCount >= 50) {
-                break;
+                //break;
             }
         }
     }

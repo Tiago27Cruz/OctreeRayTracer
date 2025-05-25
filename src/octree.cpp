@@ -289,6 +289,7 @@ void Octree::setGPUData() {
     }
 
     int currentObjectIndex = 0;
+    flattenedTree.reserve(allNodes.size());
     for (OctreeNode* node : allNodes) {
         if (!node->isLeaf) {
             node->childrenOffset = nodeToIndex[node->children[0]];
@@ -297,11 +298,7 @@ void Octree::setGPUData() {
             node->objectsOffset = currentObjectIndex;
             currentObjectIndex += node->objectCount;
         }
-    }
 
-    // Flatten the tree
-    flattenedTree.reserve(allNodes.size());
-    for (OctreeNode* node : allNodes) {
         GPUOctreeNode gpuNode;
         gpuNode.min = node->min;
         gpuNode.max = node->max;

@@ -339,49 +339,111 @@ bool traverseOctree(Ray ray, float t_min, float t_max, inout IntersectInfo rec) 
         } 
         else {
             int traversalOrder[8];
-            int orderIndex = 0;
+            vec3 comparitor = vec3(0.0, 0.0, 0.0);
 
-            switch (ray.direction){
-                case vec3(1.0, 0.0, 0.0):
-                    traversalOrder[orderIndex++] = 0;
-                    traversalOrder[orderIndex++] = 1;
-                    traversalOrder[orderIndex++] = 4;
-                    traversalOrder[orderIndex++] = 5;
-                    traversalOrder[orderIndex++] = 2;
-                    traversalOrder[orderIndex++] = 3;
-                    traversalOrder[orderIndex++] = 6;
-                    traversalOrder[orderIndex++] = 7;
-                    break;
-                case vec3(-1.0, 0.0, 0.0):
-                    traversalOrder[orderIndex++] = 2; 
-                    traversalOrder[orderIndex++] = 3; 
-                    traversalOrder[orderIndex++] = 6; 
-                    traversalOrder[orderIndex++] = 7; 
-                    traversalOrder[orderIndex++] = 0; 
-                    traversalOrder[orderIndex++] = 1; 
-                    traversalOrder[orderIndex++] = 4; 
-                    traversalOrder[orderIndex++] = 5; 
-                    break;
-                case vec3(1.0, 1.0, 0.0):
-                    traversalOrder[orderIndex++] = 0; 
-                    traversalOrder[orderIndex++] = 4; 
-                    traversalOrder[orderIndex++] = 1; 
-                    traversalOrder[orderIndex++] = 5; 
-                    traversalOrder[orderIndex++] = 2; 
-                    traversalOrder[orderIndex++] = 6; 
-                    traversalOrder[orderIndex++] = 3; 
-                    traversalOrder[orderIndex++] = 7; 
-                    break;
-                case vec3(1.0, -1.0, 0.0):
-                    traversalOrder[orderIndex++] = 2; 
-                    traversalOrder[orderIndex++] = 6; 
-                    traversalOrder[orderIndex++] = 3; 
-                    traversalOrder[orderIndex++] = 7; 
-                    traversalOrder[orderIndex++] = 0; 
-                    traversalOrder[orderIndex++] = 4; 
-                    traversalOrder[orderIndex++] = 1; 
-                    traversalOrder[orderIndex++] = 5; 
-                    break;
+            // Determine traversal order based on ray direction
+            if (ray.direction.x < 0.0) comparitor.x = -1.0;
+            else if (ray.direction.x > 0.0) comparitor.x = 1.0;
+            if (ray.direction.y < 0.0) comparitor.y = -1.0;
+            else if (ray.direction.y > 0.0) comparitor.y = 1.0;
+            if (ray.direction.z < 0.0) comparitor.z = -1.0;
+            else if (ray.direction.z > 0.0) comparitor.z = 1.0;
+            // Determine traversal order based on ray direction
+            if (comparitor == vec3(1.0, 1.0, 1.0)) {
+                //cyan
+                traversalOrder[0] = 0; 
+                traversalOrder[1] = 1; 
+                traversalOrder[2] = 2; 
+                traversalOrder[3] = 3; 
+                traversalOrder[4] = 4; 
+                traversalOrder[5] = 5; 
+                traversalOrder[6] = 6; 
+                traversalOrder[7] = 7; 
+            } 
+            else if (comparitor == vec3(-1.0, 1.0, 1.0) || comparitor == vec3(-1.0, 1.0, 0.0) || 
+                     comparitor == vec3(0.0, 1.0, 0.0) || comparitor == vec3(0.0, 1.0, 1.0)) {
+                //yellow
+                traversalOrder[0] = 2; 
+                traversalOrder[1] = 0; 
+                traversalOrder[2] = 3; 
+                traversalOrder[3] = 1; 
+                traversalOrder[4] = 6; 
+                traversalOrder[5] = 4; 
+                traversalOrder[6] = 7; 
+                traversalOrder[7] = 5; 
+            } 
+            else if (comparitor == vec3(-1.0, -1.0, 1.0) || comparitor == vec3(-1.0, 0.0, 1.0) || 
+                     comparitor == vec3(0.0, 0.0, 1.0) || comparitor == vec3(0.0, -1.0, 1.0) ||
+                     comparitor == vec3(-1.0, -1.0, 0.0) || comparitor == vec3(0.0, -1.0, 0.0) ||
+                     comparitor == vec3(-1.0, 0.0, 0.0)) {
+                //red
+                traversalOrder[0] = 3; 
+                traversalOrder[1] = 1; 
+                traversalOrder[2] = 2; 
+                traversalOrder[3] = 0; 
+                traversalOrder[4] = 7; 
+                traversalOrder[5] = 5; 
+                traversalOrder[6] = 6; 
+                traversalOrder[7] = 4; 
+            } 
+            else if (comparitor == vec3(1.0, -1.0, 1.0) || comparitor == vec3(1.0, 0.0, 1.0) ||
+                     comparitor == vec3(1.0, -1.0, 0.0) || comparitor == vec3(1.0, 0.0, 0.0)) {
+                //dark purple
+                traversalOrder[0] = 1;
+                traversalOrder[1] = 0;
+                traversalOrder[2] = 3;
+                traversalOrder[3] = 2;
+                traversalOrder[4] = 5;
+                traversalOrder[5] = 4;
+                traversalOrder[6] = 7;
+                traversalOrder[7] = 6;
+            }
+            else if (comparitor == vec3(1.0, 1.0, -1.0) || comparitor == vec3(1.0, 0.0, -1.0) ||
+                     comparitor == vec3(0.0, 1.0, -1.0) || comparitor == vec3(1.0, 1.0, 0.0)) {
+                //blue
+                traversalOrder[0] = 4; 
+                traversalOrder[1] = 5; 
+                traversalOrder[2] = 6; 
+                traversalOrder[3] = 7; 
+                traversalOrder[4] = 0; 
+                traversalOrder[5] = 1; 
+                traversalOrder[6] = 2; 
+                traversalOrder[7] = 3; 
+            } 
+            else if (comparitor == vec3(-1.0, 1.0, -1.0)) {
+                //purple
+                traversalOrder[0] = 6; 
+                traversalOrder[1] = 4; 
+                traversalOrder[2] = 7; 
+                traversalOrder[3] = 5; 
+                traversalOrder[4] = 2; 
+                traversalOrder[5] = 0; 
+                traversalOrder[6] = 3; 
+                traversalOrder[7] = 1;
+            } 
+            else if (comparitor == vec3(-1.0, -1.0, -1.0) || comparitor == vec3(-1.0, 0.0, -1.0) ||
+                     comparitor == vec3(0.0, -1.0, -1.0) || comparitor == vec3(0.0, 0.0, -1.0)) {
+                //green
+                traversalOrder[0] = 7; 
+                traversalOrder[1] = 5; 
+                traversalOrder[2] = 6; 
+                traversalOrder[3] = 4; 
+                traversalOrder[4] = 3; 
+                traversalOrder[5] = 1; 
+                traversalOrder[6] = 2; 
+                traversalOrder[7] = 0;
+            } else if (comparitor == vec3(1.0, -1.0, -1.0)) {
+                //black
+                traversalOrder[0] = 5;
+                traversalOrder[1] = 4;
+                traversalOrder[2] = 7;
+                traversalOrder[3] = 6;
+                traversalOrder[4] = 1;
+                traversalOrder[5] = 0;
+                traversalOrder[6] = 3;
+                traversalOrder[7] = 2;
+            } else {
+                // Default case, should not happen
             }
 
             

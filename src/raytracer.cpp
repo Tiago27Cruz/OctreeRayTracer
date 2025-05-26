@@ -451,6 +451,29 @@ void Raytracer::run() {
     setupScene();
     setupBuffers();
 
+    int warmupFrames = 15;
+    for (int i = 0; i < warmupFrames; i++) {
+        // Render a frame without collecting stats
+        processInput(window);
+        glClearColor(0.2f, 0.2f, 0.2f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+        
+        glm::mat4 view = camera.GetViewMatrix();
+        shader->use();
+        shader->setMat4("view", view);
+        shader->setVec3("cameraPosition", camera.Position);
+        shader->setFloat("cameraZoom", camera.Zoom);
+        
+        raytracingQuad->bind();
+        glDrawArrays(GL_TRIANGLES, 0, 6);
+        
+        glfwSwapBuffers(window);
+        glfwPollEvents();
+        
+        // Optional: Add a short sleep to ensure the GPU has time
+        std::this_thread::sleep_for(std::chrono::milliseconds(50));
+    }
+
     const double targetFrameTime = 1.0 / 60.0;
     // Main render loop
     while (!glfwWindowShouldClose(window)) {

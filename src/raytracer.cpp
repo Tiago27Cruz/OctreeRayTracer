@@ -438,10 +438,11 @@ void const Raytracer::saveStats(){
     double minFPS = 1.0 / max;
     double maxFPS = 1.0 / min;
 
-    outFile << USEOCTREE << "; " << NUMSPHERES << "; " << MAXDEPTH << "; " << NUMSAMPLES << "; " << MAXRAYSDEPTH << "; " 
-            << SCR_WIDTH << "; " << SCR_HEIGHT << "; " 
-            << min << "; " << max << "; " << avg << "; " 
-            << minFPS << "; " << maxFPS << "; " << fpsAvg
+    outFile << USEOCTREE << ";" << NUMSPHERES << ";" << MAXDEPTH << ";" << MAXSPHERESPERNODE << ";" << NUMSAMPLES << ";" << MAXRAYSDEPTH << ";" 
+            << SCR_WIDTH << ";" << SCR_HEIGHT << ";" 
+            << min << ";" << max << ";" << avg << ";" 
+            << minFPS << ";" << maxFPS << ";" << fpsAvg << ";"
+            << octree.buildTime
             << std::endl;
 
     outFile.close();
@@ -512,7 +513,7 @@ void Raytracer::run() {
             renderTimes.push_back(frameTime);
             frameCount++;
             if(frameCount >= 50) {
-                //break;
+                break;
             }
         }
     }

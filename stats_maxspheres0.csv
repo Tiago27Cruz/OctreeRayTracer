@@ -1,1 +1,1 @@
-1; 10; 1; 4; 4; 800; 600; 0.0044912; 0.0069418; 0.00605455; 144.055; 222.658; 165.238
+Uses Octree;Spheres;Max Octree Depth;Min Spheres Per Node;Num Samples;Max Rays Depth;Screen Width;Screen Height;Min;Max;Avg;Min FPS;Max FPS;Avg FPS;Octree Build Time

@@ -5,11 +5,11 @@
 const int DEBUG = 0;
 const int USEOCTREE = 1;
 
-const int USEPREBUILT = 1;
-const int NUMSPHERES = 100;
+const int USEPREBUILT = 0;
+const int NUMSPHERES = 10;
 
 // Maximum depth for the octree
-const int MAXDEPTH = 10;
+const int MAXDEPTH = 0;
 const int DEBUGDEPTH = 3;
 
 // Maximum number of spheres per node in the octree

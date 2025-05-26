@@ -82,6 +82,7 @@ void Octree::build(const std::vector<Sphere>& spheres, const int debug) {
     const auto finish{std::chrono::steady_clock::now()};
     const std::chrono::duration<double> elapsed_seconds{finish - start};
     cout << "Total build time: " << elapsed_seconds.count() << "s" << std::endl;
+    buildTime = elapsed_seconds.count();
 
     const auto start2{std::chrono::steady_clock::now()};
 

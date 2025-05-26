@@ -56,6 +56,8 @@ class Octree {
         vector<GPUOctreeNode> flattenedTree;
         vector<int> objectIndices;
 
+        double buildTime = 0.0;
+
         void build(const vector<Sphere>& spheres, const int debug = 0);
 
         void setGPUData();

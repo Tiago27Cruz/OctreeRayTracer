@@ -106,7 +106,6 @@ def run_experiments():
         'COLLECTSTATS': 1, 
         'DEBUG': 0,
         'USEPREBUILT': 0,
-        'MAXSPHERESPERNODE': 0,
     }
     
     # Define screen resolutions with proper aspect ratios
@@ -115,12 +114,10 @@ def run_experiments():
     ]
     
     # Define sphere counts to test
-    sphere_counts = [10, 25, 50]
+    sphere_counts = [10, 50, 250, 500, 1000, 2000]
 
     quality_levels = [
         {'NUMSAMPLES': 4, 'MAXRAYSDEPTH': 4},
-        {'NUMSAMPLES': 16, 'MAXRAYSDEPTH': 8},
-        {'NUMSAMPLES': 32, 'MAXRAYSDEPTH': 16}
     ]
     
     # Common parameters for both with and without octree
@@ -131,25 +128,23 @@ def run_experiments():
     ))
     
     # Parameters specific to octree configuration
-    octree_params = {
-        'MAXDEPTH': [1, 5, 6, 7, 8, 9],
-    }
+    octree_params = list(product(
+        [0, 1, 2, 3, 4, 5],    # MAXDEPTH values
+        [0, 1]                        # MAXSPHERESPERNODE values
+    ))
     
-    octree_combinations = list(
-        octree_params['MAXDEPTH'],
-    )
+    octree_combinations = octree_params
     
-    # Create all experiment configurations
     all_experiments = []
     
-    # 2. Experiments with octree and varying octree parameters
     for num_spheres, quality, resolution in common_combinations:
-        for max_depth in octree_combinations:
+        for max_depth, max_spheres in octree_combinations:
             experiment = base_params.copy()
             experiment.update({
                 'USEOCTREE': 1,
                 'NUMSPHERES': num_spheres,
-                'MAXDEPTH': max_depth
+                'MAXDEPTH': max_depth,
+                'MAXSPHERESPERNODE': max_spheres
             })
             experiment.update(resolution)
             experiment.update(quality)

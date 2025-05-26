@@ -8,8 +8,8 @@ import time
 from itertools import product
 
 # Path configurations
-#PROJECT_DIR = r"C:\Users\Tomás\Documents\GitHub\EDAA"
-PROJECT_DIR = r"d:\Universidade\Y4S2\EDAA\EDAA"
+PROJECT_DIR = r"C:\Users\Tomás\Documents\GitHub\EDAA"
+#PROJECT_DIR = r"d:\Universidade\Y4S2\EDAA\EDAA"
 CONFIG_PATH = os.path.join(PROJECT_DIR, "src", "config.h")
 BUILD_DIR = os.path.join(PROJECT_DIR, "build")
 EXE_PATH = os.path.join(BUILD_DIR, "EDAA.exe")

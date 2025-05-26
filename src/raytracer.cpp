@@ -20,7 +20,7 @@ Raytracer::Raytracer()
     : width(SCR_WIDTH), height(SCR_HEIGHT), window(nullptr),
     spheresSSBO(0), sphereDataSSBO(0), sphereData2SSBO(0),
     octreeNodesSSBO(0), octreeNodes2SSBO(0), octreeCountsSSBO(0), objectIndicesSSBO(0),
-    raytracingQuad(nullptr), shader(nullptr), frameCount(0), statsFilename("stats_center_camera.csv") {
+    raytracingQuad(nullptr), shader(nullptr), frameCount(0), statsFilename("stats_maxspheres0.csv") {
 }
 
 Raytracer::~Raytracer() {

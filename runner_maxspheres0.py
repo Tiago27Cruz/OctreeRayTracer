@@ -8,8 +8,8 @@ import time
 from itertools import product
 
 # Path configurations
-PROJECT_DIR = r"C:\Users\Tomás\Documents\GitHub\EDAA"
-#PROJECT_DIR = r"d:\Universidade\Y4S2\EDAA\EDAA"
+#PROJECT_DIR = r"C:\Users\Tomás\Documents\GitHub\EDAA"
+PROJECT_DIR = r"d:\Universidade\Y4S2\EDAA\EDAA"
 CONFIG_PATH = os.path.join(PROJECT_DIR, "src", "config.h")
 BUILD_DIR = os.path.join(PROJECT_DIR, "build")
 EXE_PATH = os.path.join(BUILD_DIR, "EDAA.exe")
@@ -29,7 +29,7 @@ def modify_config(param_dict):
     # Update each parameter in the config file
     for param, value in param_dict.items():
         # Regular expression to match the parameter definition
-        pattern = rf'const\s+(?:int|unsigned int|bool)\s+{param}\s*=\s*[^;]+;'
+        pattern = rf'const\s+(?:int|unsigned int|bool|std::string)\s+{param}\s*=\s*[^;]+;'
         
         # Determine the type of the parameter
         type_match = re.search(rf'const\s+(int|unsigned int|bool)\s+{param}', content)
@@ -106,6 +106,7 @@ def run_experiments():
         'COLLECTSTATS': 1, 
         'DEBUG': 0,
         'USEPREBUILT': 0,
+        'OUTPUTFILE': 'stats_maxspheres0.csv',
     }
     
     # Define screen resolutions with proper aspect ratios

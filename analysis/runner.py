@@ -106,6 +106,7 @@ def run_experiments():
         'DEBUG': 0,
         'USEPREBUILT': 0,
         'MAXSPHERESPERNODE': 1,
+        'OUTPUTFILE': 'stats.csv',
     }
     
     # Define screen resolutions with proper aspect ratios

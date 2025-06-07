@@ -110,6 +110,7 @@ def run_experiments():
         'MAXRAYSDEPTH': 4,
         'SCR_WIDTH': 800,
         'SCR_HEIGHT': 600,
+        'OUTPUTFILE': 'stats_2.csv',
     }
     
     # Define sphere counts to test

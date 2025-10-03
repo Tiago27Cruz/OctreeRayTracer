@@ -2,6 +2,8 @@
 
 Projected developed for EDAA class @ FEUP - M.EIC
 
+Grade: 20/20
+
 ## Compile
 
 - Run in root ``cmake -G "Unix Makefiles" -S . -B build``
